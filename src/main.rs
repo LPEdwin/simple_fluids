@@ -1,28 +1,56 @@
-use crate::vec2::Vec2;
+mod vector2;
 
-mod vec2;
+use macroquad::prelude::*;
 
-fn main() {
-    let n = 1000;
-    let c = 0.4;
-    let mut in_bounds = 0;
-    for _ in 0..n {
-        let v = Vec2::random_in_square(0.0..1.0);
-        if bound(v.x, v.y) <= c {
-            in_bounds += 1;
-        }
+use vector2::Vector2;
+
+fn window_conf() -> Conf {
+    Conf {
+        window_title: "Custom Size Window".to_owned(),
+        window_width: 800,
+        window_height: 600,
+        ..Default::default()
     }
-    let p = in_bounds as f64 / n as f64;
-    let correct_value = 2.0 * c - c * c;
-
-    println!(
-        "Probability is {} with error {} and correct value{}",
-        p,
-        (correct_value - p).abs(),
-        correct_value
-    );
 }
 
-fn bound(a: f64, b: f64) -> f64 {
-    (a - b).abs()
+struct Circle {
+    position: Vector2,
+    direction: Vector2,
+    radius: f64,
+    color: Color,
+}
+
+#[macroquad::main(window_conf)]
+async fn main() {
+    let screen = Vector2 {
+        x: screen_width() as f64,
+        y: screen_height() as f64,
+    };
+
+    let color = Color::new(0.0, 0.8667, 0.8353, 1.0);
+    let mut shapes: Vec<Circle> = Vec::new();
+    for _ in 0..1000 {
+        shapes.push(Circle {
+            position: Vector2::random_in_square(-1.0..1.0) * screen,
+            direction: Vector2::random_in_disk().normalized(),
+            radius: 10.0,
+            color: color,
+        });
+    }
+
+    loop {
+        clear_background(BLACK);
+        let dt = get_frame_time() as f64;
+        for s in &mut shapes {
+            s.position = s.position + s.direction * dt * 10.0;
+            draw_circle(
+                s.position.x as f32,
+                s.position.y as f32,
+                s.radius as f32,
+                s.color,
+            );
+        }
+
+        next_frame().await;
+    }
 }
