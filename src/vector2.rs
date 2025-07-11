@@ -12,17 +12,42 @@ pub struct Vector2 {
     pub y: f64,
 }
 
-impl std::ops::Add for Vector2 {
-    type Output = Vector2;
-
-    #[inline]
-    fn add(self, rhs: Vector2) -> Vector2 {
-        Vector2 {
-            x: self.x + rhs.x,
-            y: self.y + rhs.y,
+macro_rules! impl_op_assign {
+    ($trait:ident, $func:ident, $op:tt) => {
+        impl std::ops::$trait for Vector2 {
+            #[inline]
+            fn $func(&mut self, other: Self) {
+                self.x $op other.x;
+                self.y $op other.y;
+            }
         }
-    }
+    };
 }
+
+impl_op_assign!(AddAssign, add_assign, +=);
+impl_op_assign!(SubAssign, sub_assign, -=);
+impl_op_assign!(MulAssign, mul_assign, *=);
+impl_op_assign!(DivAssign, div_assign, /=);
+
+macro_rules! impl_op {
+    ($trait:ident, $func:ident, $op:tt) => {
+        impl std::ops::$trait for Vector2 {
+            type Output = Self;
+            #[inline]
+            fn $func(self, other: Self) -> Self {
+                Self {
+                    x: self.x $op other.x,
+                    y: self.y $op other.y,
+                }
+            }
+        }
+    };
+}
+
+impl_op!(Add, add, +);
+impl_op!(Sub, sub, -);
+impl_op!(Mul, mul, *);
+impl_op!(Div, div, /);
 
 impl std::ops::Mul<Vector2> for f64 {
     type Output = Vector2;
@@ -32,18 +57,6 @@ impl std::ops::Mul<Vector2> for f64 {
         Vector2 {
             x: self * rhs.x,
             y: self * rhs.y,
-        }
-    }
-}
-
-impl std::ops::Mul for Vector2 {
-    type Output = Vector2;
-
-    #[inline]
-    fn mul(self, rhs: Vector2) -> Vector2 {
-        Vector2 {
-            x: self.x * rhs.x,
-            y: self.y * rhs.y,
         }
     }
 }
