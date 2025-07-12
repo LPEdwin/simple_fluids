@@ -103,6 +103,7 @@ impl Vector2 {
     }
 
     pub const ZERO: Vector2 = Vector2 { x: 0.0, y: 0.0 };
+    pub const ONE: Vector2 = Vector2 { x: 1.0, y: 1.0 };
 
     pub fn length(self) -> f64 {
         (self.x * self.x + self.y * self.y).sqrt()
