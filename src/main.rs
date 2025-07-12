@@ -48,6 +48,7 @@ async fn main() {
         let gravity = Vector2 { x: 0.0, y: -0.1 };
         let dt = get_frame_time() as f64;
         for s in &mut shapes {
+            collision_update(s);
             s.velocity += gravity * dt;
             s.position += s.velocity * dt;
             draw_circle(
@@ -59,6 +60,14 @@ async fn main() {
         }
 
         next_frame().await;
+    }
+}
+
+fn collision_update(s: &mut Circle) {
+    const EPS: f64 = 1e-8;
+    let up: Vector2 = Vector2::new(0.0, 1.0);
+    if s.position.y < EPS {
+        s.velocity = 0.95 * s.velocity.reflect(up) // using debounce factor
     }
 }
 

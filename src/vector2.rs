@@ -110,7 +110,7 @@ impl Vector2 {
     }
 
     pub fn length_squared(self) -> f64 {
-        dot(&self, &self)
+        dot(self, self)
     }
 
     pub fn normalized(self) -> Vector2 {
@@ -155,6 +155,10 @@ impl Vector2 {
         })
     }
 
+    pub fn reflect(self, n: Vector2) -> Vector2 {
+        return self - 2.0 * dot(self, n) * n;
+    }
+
     pub fn lerp(origin: Vector2, target: Vector2, t: f64) -> Vector2 {
         Vector2 {
             x: origin.x + (target.x - origin.x) * t,
@@ -164,6 +168,6 @@ impl Vector2 {
 }
 
 #[inline]
-fn dot(v1: &Vector2, v2: &Vector2) -> f64 {
+fn dot(v1: Vector2, v2: Vector2) -> f64 {
     v1.x * v2.x + v1.y * v2.y
 }
