@@ -168,6 +168,6 @@ impl Vector2 {
 }
 
 #[inline]
-fn dot(v1: Vector2, v2: Vector2) -> f64 {
+pub fn dot(v1: Vector2, v2: Vector2) -> f64 {
     v1.x * v2.x + v1.y * v2.y
 }
