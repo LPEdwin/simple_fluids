@@ -66,8 +66,15 @@ async fn main() {
 fn collision_update(s: &mut Circle) {
     const EPS: f64 = 1e-8;
     let up: Vector2 = Vector2::new(0.0, 1.0);
-    if s.position.y < EPS {
-        s.velocity = 0.95 * s.velocity.reflect(up) // using debounce factor
+    let right: Vector2 = Vector2::new(-1.0, 0.0);
+    let left: Vector2 = Vector2::new(1.0, 0.0);
+    let d = 0.95; // using debounce factor
+    if s.position.y - VIEW.min.y < EPS {
+        s.velocity = d * s.velocity.reflect(up)
+    } else if VIEW.max.x - s.position.x < EPS {
+        s.velocity = d * s.velocity.reflect(right)
+    } else if s.position.x - VIEW.min.x < EPS {
+        s.velocity = d * s.velocity.reflect(left)
     }
 }
 
