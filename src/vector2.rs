@@ -49,6 +49,17 @@ impl_op!(Sub, sub, -);
 impl_op!(Mul, mul, *);
 impl_op!(Div, div, /);
 
+impl std::ops::Neg for Vector2 {
+    type Output = Vector2;
+
+    fn neg(self) -> Self::Output {
+        Vector2 {
+            x: -self.x,
+            y: -self.y,
+        }
+    }
+}
+
 impl std::ops::Mul<Vector2> for f64 {
     type Output = Vector2;
 
@@ -87,6 +98,12 @@ impl std::ops::Div<f64> for Vector2 {
 }
 
 impl Vector2 {
+    pub fn new(x: f64, y: f64) -> Vector2 {
+        Vector2 { x, y }
+    }
+
+    pub const ZERO: Vector2 = Vector2 { x: 0.0, y: 0.0 };
+
     pub fn length(self) -> f64 {
         (self.x * self.x + self.y * self.y).sqrt()
     }
@@ -105,6 +122,19 @@ impl Vector2 {
             Vector2 {
                 x: rng.random_range(range.clone()),
                 y: rng.random_range(range),
+            }
+        })
+    }
+
+    pub fn random_in_rectangle(
+        x_range: std::ops::Range<f64>,
+        y_range: std::ops::Range<f64>,
+    ) -> Vector2 {
+        RNG.with(|cell| {
+            let rng = unsafe { &mut *cell.get() };
+            Vector2 {
+                x: rng.random_range(x_range),
+                y: rng.random_range(y_range),
             }
         })
     }
