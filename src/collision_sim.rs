@@ -20,6 +20,8 @@ pub static BOUNDS: Rectangle = Rectangle {
 };
 
 pub struct CollisionSimulation {
+    pub window_width: f32,
+    pub window_height: f32,
     pub view: Rectangle,
     pub circles: Vec<Circle>,
 }
@@ -27,8 +29,9 @@ pub struct CollisionSimulation {
 impl CollisionSimulation {
     pub fn new() -> Self {
         CollisionSimulation {
+            window_width: 800.0,
+            window_height: 400.0,
             circles: Vec::new(),
-
             view: Rectangle {
                 min: Vector2 { x: 0.0, y: 0.0 },
                 max: Vector2 { x: 2.0, y: 1.0 },

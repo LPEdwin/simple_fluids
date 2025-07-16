@@ -7,19 +7,13 @@ use vector2::Vector2;
 
 use crate::collision_sim::Rectangle;
 
-fn window_conf() -> Conf {
-    Conf {
-        window_title: "Custom Size Window".to_owned(),
-        window_width: 800,
-        window_height: 400,
-        ..Default::default()
-    }
-}
-
-#[macroquad::main(window_conf)]
+#[macroquad::main("Simulation")]
 async fn main() {
     let mut sim = collision_sim::CollisionSimulation::new();
     sim.initialize();
+
+    request_new_screen_size(sim.window_width, sim.window_height);
+
     loop {
         clear_background(BLACK);
         sim.update(get_frame_time() as f64);
