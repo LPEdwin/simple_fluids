@@ -58,8 +58,9 @@ async fn main() {
         clear_background(BLACK);
         let gravity = Vector2 { x: 0.0, y: -0.1 };
         let dt = get_frame_time() as f64;
+        circle_collission(&mut circles);
         for s in &mut circles {
-            collision_update(s);
+            collision_update_with_bounds(s);
             s.velocity += gravity * dt;
             s.position += s.velocity * dt;
             draw_circle(
@@ -74,34 +75,62 @@ async fn main() {
     }
 }
 
-fn collision_update(c: &mut Circle) {
-    collision_update_with_bounds(c);
+fn circle_collission(circles: &mut Vec<Circle>) {
+    let mut collisions = Vec::new();
+
+    let collide = |c1: &Circle, c2: &Circle| {
+        let d = (c1.position - c2.position).length();
+        return d <= c1.radius + c2.radius;
+    };
+
+    for i in 0..circles.len() {
+        for j in i + 1..circles.len() {
+            if collide(&circles[i], &circles[j]) {
+                collisions.push((i, j));
+            }
+        }
+    }
+
+    let resolve = |circles: &mut Vec<Circle>, i: usize, j: usize| {
+        let n = (circles[j].position - circles[i].position).normalized();
+        let rel_vel2 = circles[j].velocity - circles[i].velocity;
+        if dot(rel_vel2, n) >= 0.0 {
+            return;
+        }
+        circles[i].velocity = reflect_with_loss(circles[i].velocity, n);
+        circles[j].velocity = reflect_with_loss(circles[j].velocity, -n);
+    };
+
+    for coll in collisions {
+        resolve(circles, coll.0, coll.1);
+    }
+}
+
+fn reflect_with_loss(velocity: Vector2, normal: Vector2) -> Vector2 {
+    // Coefficient of restitution
+    const COR: f64 = 0.95;
+    let v_normal = dot(velocity, normal) * normal;
+    let v_tangential = velocity - v_normal;
+    return v_tangential - COR * v_normal;
 }
 
 fn collision_update_with_bounds(c: &mut Circle) {
     const EPS: f64 = 1e-8;
-    const R: f64 = 0.95;
-
-    let reflect = |velocity: Vector2, normal: Vector2| -> Vector2 {
-        let v_normal = dot(velocity, normal) * normal;
-        let v_tangential = velocity - v_normal;
-        return v_tangential - R * v_normal;
-    };
 
     if (c.position.y - c.radius) - BOUNDS.min.y < EPS {
-        c.velocity = reflect(c.velocity, Vector2::new(0.0, 1.0));
+        c.velocity = reflect_with_loss(c.velocity, Vector2::new(0.0, 1.0));
         if (c.position.y - c.radius) - BOUNDS.min.y < 0.0 {
             c.position.y = c.radius + BOUNDS.min.y;
         }
     }
     if BOUNDS.max.x - (c.position.x + c.radius) < EPS {
-        c.velocity = reflect(c.velocity, Vector2::new(-1.0, 0.0));
+        c.velocity = reflect_with_loss(c.velocity, Vector2::new(-1.0, 0.0));
         if BOUNDS.max.x - (c.position.x + c.radius) < 0.0 {
             c.position.x = -c.radius + BOUNDS.max.x;
         }
     }
     if (c.position.x - c.radius) - BOUNDS.min.x < EPS {
-        c.velocity = reflect(c.velocity, Vector2::new(1.0, 0.0));
+        c.velocity = reflect_with_loss(c.velocity, Vector2::new(1.0, 0.0));
         if (c.position.x - c.radius) - BOUNDS.min.x < 0.0 {
             c.position.x = c.radius + BOUNDS.min.x;
         }
