@@ -1,11 +1,12 @@
 mod collision_sim;
+mod core;
 mod vector2;
 
 use macroquad::prelude::*;
 
-use vector2::Vector2;
-
-use crate::collision_sim::Rectangle;
+use crate::core::Circle;
+use crate::core::Rectangle;
+use crate::vector2::Vector2;
 
 #[macroquad::main("Simulation")]
 async fn main() {
@@ -22,7 +23,7 @@ async fn main() {
     }
 }
 
-pub fn render(circles: &Vec<collision_sim::Circle>, view: &Rectangle) {
+pub fn render(circles: &Vec<Circle>, view: &Rectangle) {
     for s in circles {
         draw_circle(
             to_screen(s.position, view).x as f32,
