@@ -56,7 +56,7 @@ impl ImpulsSimulation {
         let gravity = Vector2 { x: 0.0, y: -0.1 };
         circle_collissions(&mut self.circles);
         for s in &mut self.circles {
-            boundary_collision(s, self.boundery);
+            boundary_collision(s, &self.boundery, 1.0);
             s.velocity += gravity * dt;
             s.position += s.velocity * dt;
         }
@@ -108,29 +108,29 @@ fn resolve_with_mass(circles: &mut Vec<Circle>, i: usize, j: usize, restitution:
     c2.velocity += n * (j_impulse / mj);
 }
 
-fn boundary_collision(c: &mut Circle, boundery: Rectangle) {
+// Restitution is a value from 0 to 1; 1 means perfectly elastic (no energy loss), 0 means perfectly inelastic.
+fn boundary_collision(c: &mut Circle, boundery: &Rectangle, restitution: f64) {
     const EPS: f64 = 1e-8;
-    const RESTITUTION: f64 = 1.0;
     if boundery.max.y - (c.position.y + c.radius) < EPS {
-        c.velocity = reflect_with_damping(c.velocity, Vector2::new(0.0, -1.0), RESTITUTION);
+        c.velocity = reflect_collision(c.velocity, Vector2::new(0.0, -1.0), restitution);
         if (c.position.y + c.radius) - boundery.max.y < 0.0 {
             c.position.y = -c.radius + boundery.max.y;
         }
     }
     if boundery.max.x - (c.position.x + c.radius) < EPS {
-        c.velocity = reflect_with_damping(c.velocity, Vector2::new(-1.0, 0.0), RESTITUTION);
+        c.velocity = reflect_collision(c.velocity, Vector2::new(-1.0, 0.0), restitution);
         if boundery.max.x - (c.position.x + c.radius) < 0.0 {
             c.position.x = -c.radius + boundery.max.x;
         }
     }
     if (c.position.y - c.radius) - boundery.min.y < EPS {
-        c.velocity = reflect_with_damping(c.velocity, Vector2::new(0.0, 1.0), RESTITUTION);
+        c.velocity = reflect_collision(c.velocity, Vector2::new(0.0, 1.0), restitution);
         if (c.position.y - c.radius) - boundery.min.y < 0.0 {
             c.position.y = c.radius + boundery.min.y;
         }
     }
     if (c.position.x - c.radius) - boundery.min.x < EPS {
-        c.velocity = reflect_with_damping(c.velocity, Vector2::new(1.0, 0.0), RESTITUTION);
+        c.velocity = reflect_collision(c.velocity, Vector2::new(1.0, 0.0), restitution);
         if (c.position.x - c.radius) - boundery.min.x < 0.0 {
             c.position.x = c.radius + boundery.min.x;
         }
@@ -141,7 +141,7 @@ fn boundary_collision(c: &mut Circle, boundery: Rectangle) {
     }
 }
 
-fn reflect_with_damping(velocity: Vector2, surface_normal: Vector2, restitution: f64) -> Vector2 {
+fn reflect_collision(velocity: Vector2, surface_normal: Vector2, restitution: f64) -> Vector2 {
     let normal_component = dot(velocity, surface_normal) * surface_normal;
     let tangential_component = velocity - normal_component;
     tangential_component - restitution * normal_component
