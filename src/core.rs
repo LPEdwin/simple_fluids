@@ -5,6 +5,7 @@ use crate::vector2::dot;
 
 #[derive(Debug, Clone, Copy)]
 pub struct Circle {
+    pub mass: f64,
     pub position: Vector2,
     pub velocity: Vector2,
     pub radius: f64,

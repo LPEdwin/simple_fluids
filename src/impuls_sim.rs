@@ -1,13 +1,10 @@
-use core::f64;
-
 use crate::core::Circle;
 use crate::core::Rectangle;
-use crate::core::reflect_with_damping;
 use crate::vector2::Vector2;
 use crate::vector2::dot;
 use macroquad::prelude::*;
 
-pub struct CollisionSimulation {
+pub struct ImpulsSimulation {
     pub window_width: f32,
     pub window_height: f32,
     pub view: Rectangle,
@@ -15,9 +12,9 @@ pub struct CollisionSimulation {
     pub boundery: Rectangle,
 }
 
-impl CollisionSimulation {
+impl ImpulsSimulation {
     pub fn new() -> Self {
-        CollisionSimulation {
+        ImpulsSimulation {
             window_width: 800.0,
             window_height: 400.0,
             circles: Vec::new(),
@@ -38,8 +35,8 @@ impl CollisionSimulation {
         const RADIUS: f64 = 0.02;
         const EPS: f64 = 1e-8;
         let boundary = self.boundery;
-        let spawn_bounds_x = RADIUS + boundary.min.x + EPS..boundary.max.x - RADIUS + EPS;
-        let spawn_bounds_y = RADIUS + boundary.min.y + EPS..boundary.max.y;
+        let spawn_bounds_x = RADIUS + boundary.min.x + EPS..boundary.max.x - RADIUS - EPS;
+        let spawn_bounds_y = RADIUS + boundary.min.y + EPS..boundary.max.y - RADIUS - EPS;
 
         for _ in 0..100 {
             self.circles.push(Circle {
@@ -48,7 +45,7 @@ impl CollisionSimulation {
                     spawn_bounds_x.clone(),
                     spawn_bounds_y.clone(),
                 ),
-                velocity: Vector2::random_in_disk() * 0.1,
+                velocity: Vector2::random_in_disk() * 0.5,
                 radius: RADIUS,
                 color: color,
             });
@@ -82,38 +79,58 @@ fn circle_collissions(circles: &mut Vec<Circle>) {
         }
     }
 
-    let resolve = |circles: &mut Vec<Circle>, i: usize, j: usize| {
-        let n = (circles[j].position - circles[i].position).normalized();
-        let rel_vel2 = circles[j].velocity - circles[i].velocity;
-        if dot(rel_vel2, n) >= 0.0 {
-            return;
-        }
-        circles[i].velocity = reflect_with_damping(circles[i].velocity, n);
-        circles[j].velocity = reflect_with_damping(circles[j].velocity, -n);
-    };
-
-    for coll in collisions {
-        resolve(circles, coll.0, coll.1);
+    for (i, j) in collisions {
+        resolve_with_mass(circles, i, j, 1.0);
     }
+}
+
+fn resolve_with_mass(circles: &mut Vec<Circle>, i: usize, j: usize, restitution: f64) {
+    let (c1, c2) = {
+        let (left, right) = circles.split_at_mut(j);
+        (&mut left[i], &mut right[0])
+    };
+    let n = (c2.position - c1.position).normalized();
+    // velocity from c1 relative to c2 (c2 is a fixed point)
+    let rel = c1.velocity - c2.velocity;
+    let vel_along = dot(rel, n);
+    if vel_along <= 0.0 {
+        // moving away from c2
+        return;
+    }
+
+    let mi = c1.mass;
+    let mj = c2.mass;
+    let mu = mi * mj / (mi + mj);
+
+    let j_impulse = (1.0 + restitution) * mu * vel_along;
+
+    c1.velocity -= n * (j_impulse / mi);
+    c2.velocity += n * (j_impulse / mj);
 }
 
 fn boundary_collision(c: &mut Circle, boundery: Rectangle) {
     const EPS: f64 = 1e-8;
-
-    if (c.position.y - c.radius) - boundery.min.y < EPS {
-        c.velocity = reflect_with_damping(c.velocity, Vector2::new(0.0, 1.0));
-        if (c.position.y - c.radius) - boundery.min.y < 0.0 {
-            c.position.y = c.radius + boundery.min.y;
+    const RESTITUTION: f64 = 1.0;
+    if boundery.max.y - (c.position.y + c.radius) < EPS {
+        c.velocity = reflect_with_damping(c.velocity, Vector2::new(0.0, -1.0), RESTITUTION);
+        if (c.position.y + c.radius) - boundery.max.y < 0.0 {
+            c.position.y = -c.radius + boundery.max.y;
         }
     }
     if boundery.max.x - (c.position.x + c.radius) < EPS {
-        c.velocity = reflect_with_damping(c.velocity, Vector2::new(-1.0, 0.0));
+        c.velocity = reflect_with_damping(c.velocity, Vector2::new(-1.0, 0.0), RESTITUTION);
         if boundery.max.x - (c.position.x + c.radius) < 0.0 {
             c.position.x = -c.radius + boundery.max.x;
         }
     }
+    if (c.position.y - c.radius) - boundery.min.y < EPS {
+        c.velocity = reflect_with_damping(c.velocity, Vector2::new(0.0, 1.0), RESTITUTION);
+        if (c.position.y - c.radius) - boundery.min.y < 0.0 {
+            c.position.y = c.radius + boundery.min.y;
+        }
+    }
     if (c.position.x - c.radius) - boundery.min.x < EPS {
-        c.velocity = reflect_with_damping(c.velocity, Vector2::new(1.0, 0.0));
+        c.velocity = reflect_with_damping(c.velocity, Vector2::new(1.0, 0.0), RESTITUTION);
         if (c.position.x - c.radius) - boundery.min.x < 0.0 {
             c.position.x = c.radius + boundery.min.x;
         }
@@ -122,4 +139,10 @@ fn boundary_collision(c: &mut Circle, boundery: Rectangle) {
     if c.velocity.length() < EPS {
         c.velocity = Vector2::ZERO;
     }
+}
+
+fn reflect_with_damping(velocity: Vector2, surface_normal: Vector2, restitution: f64) -> Vector2 {
+    let normal_component = dot(velocity, surface_normal) * surface_normal;
+    let tangential_component = velocity - normal_component;
+    tangential_component - restitution * normal_component
 }

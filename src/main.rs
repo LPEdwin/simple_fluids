@@ -1,16 +1,19 @@
 mod collision_sim;
 mod core;
+mod impuls_sim;
 mod vector2;
 
 use macroquad::prelude::*;
 
 use crate::core::Circle;
 use crate::core::Rectangle;
+use crate::impuls_sim::ImpulsSimulation;
 use crate::vector2::Vector2;
 
 #[macroquad::main("Simulation")]
 async fn main() {
-    let mut sim = collision_sim::CollisionSimulation::new();
+    //let mut sim = collision_sim::CollisionSimulation::new();
+    let mut sim = ImpulsSimulation::new();
     sim.initialize();
 
     request_new_screen_size(sim.window_width, sim.window_height);
