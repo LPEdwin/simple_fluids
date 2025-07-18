@@ -1,4 +1,4 @@
-use crate::core::Circle;
+use crate::core::Particle;
 use crate::core::Rectangle;
 use crate::vector2::Vector2;
 use crate::vector2::dot;
@@ -8,7 +8,7 @@ pub struct ImpulsSimulation {
     pub window_width: f32,
     pub window_height: f32,
     pub view: Rectangle,
-    pub circles: Vec<Circle>,
+    pub circles: Vec<Particle>,
     pub boundery: Rectangle,
 }
 
@@ -39,7 +39,7 @@ impl ImpulsSimulation {
         let spawn_bounds_y = RADIUS + boundary.min.y + EPS..boundary.max.y - RADIUS - EPS;
 
         for _ in 0..100 {
-            self.circles.push(Circle {
+            self.circles.push(Particle {
                 mass: std::f64::consts::PI * RADIUS * RADIUS,
                 position: Vector2::random_in_rectangle(
                     spawn_bounds_x.clone(),
@@ -63,10 +63,10 @@ impl ImpulsSimulation {
     }
 }
 
-fn circle_collissions(circles: &mut Vec<Circle>) {
+fn circle_collissions(circles: &mut Vec<Particle>) {
     let mut collisions = Vec::new();
 
-    let collide = |c1: &Circle, c2: &Circle| {
+    let collide = |c1: &Particle, c2: &Particle| {
         let d = (c1.position - c2.position).length();
         return d <= c1.radius + c2.radius;
     };
@@ -84,7 +84,7 @@ fn circle_collissions(circles: &mut Vec<Circle>) {
     }
 }
 
-fn resolve_with_mass(circles: &mut Vec<Circle>, i: usize, j: usize, restitution: f64) {
+fn resolve_with_mass(circles: &mut Vec<Particle>, i: usize, j: usize, restitution: f64) {
     let (c1, c2) = {
         let (left, right) = circles.split_at_mut(j);
         (&mut left[i], &mut right[0])
@@ -109,7 +109,7 @@ fn resolve_with_mass(circles: &mut Vec<Circle>, i: usize, j: usize, restitution:
 }
 
 // Restitution is a value from 0 to 1; 1 means perfectly elastic (no energy loss), 0 means perfectly inelastic.
-fn boundary_collision(c: &mut Circle, boundery: &Rectangle, restitution: f64) {
+fn boundary_collision(c: &mut Particle, boundery: &Rectangle, restitution: f64) {
     const EPS: f64 = 1e-8;
     if boundery.max.y - (c.position.y + c.radius) < EPS {
         c.velocity = reflect_collision(c.velocity, Vector2::new(0.0, -1.0), restitution);

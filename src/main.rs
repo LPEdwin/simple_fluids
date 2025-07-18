@@ -5,7 +5,7 @@ mod vector2;
 
 use macroquad::prelude::*;
 
-use crate::core::Circle;
+use crate::core::Particle;
 use crate::core::Rectangle;
 use crate::impuls_sim::ImpulsSimulation;
 use crate::vector2::Vector2;
@@ -26,7 +26,7 @@ async fn main() {
     }
 }
 
-pub fn render(circles: &Vec<Circle>, view: &Rectangle) {
+pub fn render(circles: &Vec<Particle>, view: &Rectangle) {
     for s in circles {
         draw_circle(
             to_screen(s.position, view).x as f32,

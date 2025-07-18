@@ -1,6 +1,6 @@
 use core::f64;
 
-use crate::core::Circle;
+use crate::core::Particle;
 use crate::core::Rectangle;
 use crate::core::reflect_with_damping;
 use crate::vector2::Vector2;
@@ -11,7 +11,7 @@ pub struct CollisionSimulation {
     pub window_width: f32,
     pub window_height: f32,
     pub view: Rectangle,
-    pub circles: Vec<Circle>,
+    pub circles: Vec<Particle>,
     pub boundery: Rectangle,
 }
 
@@ -42,7 +42,7 @@ impl CollisionSimulation {
         let spawn_bounds_y = RADIUS + boundary.min.y + EPS..boundary.max.y;
 
         for _ in 0..100 {
-            self.circles.push(Circle {
+            self.circles.push(Particle {
                 mass: std::f64::consts::PI * RADIUS * RADIUS,
                 position: Vector2::random_in_rectangle(
                     spawn_bounds_x.clone(),
@@ -66,10 +66,10 @@ impl CollisionSimulation {
     }
 }
 
-fn circle_collissions(circles: &mut Vec<Circle>) {
+fn circle_collissions(circles: &mut Vec<Particle>) {
     let mut collisions = Vec::new();
 
-    let collide = |c1: &Circle, c2: &Circle| {
+    let collide = |c1: &Particle, c2: &Particle| {
         let d = (c1.position - c2.position).length();
         return d <= c1.radius + c2.radius;
     };
@@ -82,7 +82,7 @@ fn circle_collissions(circles: &mut Vec<Circle>) {
         }
     }
 
-    let resolve = |circles: &mut Vec<Circle>, i: usize, j: usize| {
+    let resolve = |circles: &mut Vec<Particle>, i: usize, j: usize| {
         let n = (circles[j].position - circles[i].position).normalized();
         let rel_vel2 = circles[j].velocity - circles[i].velocity;
         if dot(rel_vel2, n) >= 0.0 {
@@ -97,7 +97,7 @@ fn circle_collissions(circles: &mut Vec<Circle>) {
     }
 }
 
-fn boundary_collision(c: &mut Circle, boundery: Rectangle) {
+fn boundary_collision(c: &mut Particle, boundery: Rectangle) {
     const EPS: f64 = 1e-8;
 
     if (c.position.y - c.radius) - boundery.min.y < EPS {

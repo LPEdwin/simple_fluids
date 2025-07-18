@@ -3,8 +3,8 @@ use macroquad::color::Color;
 use crate::vector2::Vector2;
 use crate::vector2::dot;
 
-#[derive(Debug, Clone, Copy)]
-pub struct Circle {
+#[derive(Debug, Default, Clone, Copy)]
+pub struct Particle {
     pub mass: f64,
     pub position: Vector2,
     pub velocity: Vector2,
@@ -12,7 +12,7 @@ pub struct Circle {
     pub color: Color,
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct Rectangle {
     pub min: Vector2,
     pub max: Vector2,

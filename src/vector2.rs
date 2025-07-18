@@ -6,7 +6,7 @@ thread_local! {
     static RNG: UnsafeCell<Pcg64Mcg> = UnsafeCell::new(Pcg64Mcg::from_rng(&mut rand::rng()));
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Default, Clone, Copy)]
 pub struct Vector2 {
     pub x: f64,
     pub y: f64,
