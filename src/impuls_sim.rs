@@ -12,6 +12,7 @@ pub struct ImpulsSimulation {
     pub particles: Vec<Particle>,
     pub boundery: Rectangle,
     pub gravity: Vector2,
+    pub restitution: f64,
 }
 
 impl ImpulsSimulation {
@@ -29,6 +30,7 @@ impl ImpulsSimulation {
                 max: Vector2 { x: 2.0, y: 1.0 },
             },
             gravity: Vector2 { x: 0.0, y: -0.1 },
+            restitution:1,0,
         }
     }
 
@@ -67,7 +69,7 @@ impl ImpulsSimulation {
             boundary_collision(s, &self.boundery, 1.0);
         }
         // resolve collisions
-        resolve_particle_collisions(&mut self.particles, &p_collisions);
+        resolve_particle_collisions(&mut self.particles, &p_collisions, self.restitution);
         // correct positions
     }
 }
@@ -94,9 +96,9 @@ fn detect_particle_collissions(particles: &mut Vec<Particle>) -> Vec<ParticleCol
     return collisions;
 }
 
-fn resolve_particle_collisions(particles: &mut Vec<Particle>, collisions: &Vec<ParticleCollision>) {
+fn resolve_particle_collisions(particles: &mut Vec<Particle>, collisions: &Vec<ParticleCollision>, restitution: f64) {
     for coll in collisions {
-        resolve_with_mass(particles, coll.i, coll.j, 1.0);
+        resolve_with_mass(particles, coll.i, coll.j, restitution);
     }
 }
 
