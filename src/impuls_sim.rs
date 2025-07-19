@@ -30,7 +30,7 @@ impl ImpulsSimulation {
                 max: Vector2 { x: 2.0, y: 1.0 },
             },
             gravity: Vector2 { x: 0.0, y: -0.1 },
-            restitution:1,0,
+            restitution: 1.0,
         }
     }
 
@@ -96,34 +96,39 @@ fn detect_particle_collissions(particles: &mut Vec<Particle>) -> Vec<ParticleCol
     return collisions;
 }
 
-fn resolve_particle_collisions(particles: &mut Vec<Particle>, collisions: &Vec<ParticleCollision>, restitution: f64) {
+fn resolve_particle_collisions(
+    particles: &mut [Particle],
+    collisions: &[ParticleCollision],
+    restitution: f64,
+) {
     for coll in collisions {
-        resolve_with_mass(particles, coll.i, coll.j, restitution);
+        let (i, j) = (coll.i, coll.j);
+        unsafe {
+            let p1 = particles.get_unchecked_mut(i) as *mut Particle;
+            let p2 = particles.get_unchecked_mut(j) as *mut Particle;
+            resolve_with_mass(&mut *p1, &mut *p2, restitution);
+        }
     }
 }
 
-fn resolve_with_mass(particles: &mut Vec<Particle>, i: usize, j: usize, restitution: f64) {
-    let (c1, c2) = {
-        let (left, right) = particles.split_at_mut(j);
-        (&mut left[i], &mut right[0])
-    };
-    let n = (c2.position - c1.position).normalized();
-    // velocity from c1 relative to c2 (c2 is a fixed point)
-    let rel = c1.velocity - c2.velocity;
+fn resolve_with_mass(p1: &mut Particle, p2: &mut Particle, restitution: f64) {
+    let n = (p2.position - p1.position).normalized();
+    // velocity from p1 relative to p2 (p2 is a fixed point)
+    let rel = p1.velocity - p2.velocity;
     let vel_along = dot(rel, n);
     if vel_along <= 0.0 {
-        // moving away from c2
+        // moving away from p2
         return;
     }
 
-    let mi = c1.mass;
-    let mj = c2.mass;
+    let mi = p1.mass;
+    let mj = p2.mass;
     let mu = mi * mj / (mi + mj);
 
     let j_impulse = (1.0 + restitution) * mu * vel_along;
 
-    c1.velocity -= n * (j_impulse / mi);
-    c2.velocity += n * (j_impulse / mj);
+    p1.velocity -= n * (j_impulse / mi);
+    p2.velocity += n * (j_impulse / mj);
 }
 
 // Restitution is a value from 0 to 1; 1 means perfectly elastic (no energy loss), 0 means perfectly inelastic.
