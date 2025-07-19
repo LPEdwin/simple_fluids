@@ -21,7 +21,7 @@ async fn main() {
     loop {
         clear_background(BLACK);
         sim.update(get_frame_time() as f64);
-        render(&sim.circles, &sim.view);
+        render(&sim.particles, &sim.view);
         next_frame().await;
     }
 }

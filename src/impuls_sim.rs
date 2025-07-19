@@ -1,4 +1,5 @@
 use crate::core::Particle;
+use crate::core::ParticleCollision;
 use crate::core::Rectangle;
 use crate::vector2::Vector2;
 use crate::vector2::dot;
@@ -8,8 +9,9 @@ pub struct ImpulsSimulation {
     pub window_width: f32,
     pub window_height: f32,
     pub view: Rectangle,
-    pub circles: Vec<Particle>,
+    pub particles: Vec<Particle>,
     pub boundery: Rectangle,
+    pub gravity: Vector2,
 }
 
 impl ImpulsSimulation {
@@ -17,7 +19,7 @@ impl ImpulsSimulation {
         ImpulsSimulation {
             window_width: 800.0,
             window_height: 400.0,
-            circles: Vec::new(),
+            particles: Vec::new(),
             view: Rectangle {
                 min: Vector2 { x: 0.0, y: 0.0 },
                 max: Vector2 { x: 2.0, y: 1.0 },
@@ -26,12 +28,13 @@ impl ImpulsSimulation {
                 min: Vector2 { x: 0.0, y: 0.0 },
                 max: Vector2 { x: 2.0, y: 1.0 },
             },
+            gravity: Vector2 { x: 0.0, y: -0.1 },
         }
     }
 
     pub fn initialize(&mut self) {
         let color = Color::new(0.0, 0.8667, 0.8353, 1.0);
-        self.circles = Vec::new();
+        self.particles = Vec::new();
         const RADIUS: f64 = 0.02;
         const EPS: f64 = 1e-8;
         let boundary = self.boundery;
@@ -39,7 +42,7 @@ impl ImpulsSimulation {
         let spawn_bounds_y = RADIUS + boundary.min.y + EPS..boundary.max.y - RADIUS - EPS;
 
         for _ in 0..100 {
-            self.circles.push(Particle {
+            self.particles.push(Particle {
                 mass: std::f64::consts::PI * RADIUS * RADIUS,
                 position: Vector2::random_in_rectangle(
                     spawn_bounds_x.clone(),
@@ -53,40 +56,53 @@ impl ImpulsSimulation {
     }
 
     pub fn update(&mut self, dt: f64) {
-        let gravity = Vector2 { x: 0.0, y: -0.1 };
-        circle_collissions(&mut self.circles);
-        for s in &mut self.circles {
-            boundary_collision(s, &self.boundery, 1.0);
-            s.velocity += gravity * dt;
+        // apply gravity
+        for s in &mut self.particles {
+            s.velocity += self.gravity * dt;
             s.position += s.velocity * dt;
         }
+        // detect collisions
+        let p_collisions = detect_particle_collissions(&mut self.particles);
+        for s in &mut self.particles {
+            boundary_collision(s, &self.boundery, 1.0);
+        }
+        // resolve collisions
+        resolve_particle_collisions(&mut self.particles, &p_collisions);
+        // correct positions
     }
 }
 
-fn circle_collissions(circles: &mut Vec<Particle>) {
+fn detect_particle_collissions(particles: &mut Vec<Particle>) -> Vec<ParticleCollision> {
     let mut collisions = Vec::new();
 
-    let collide = |c1: &Particle, c2: &Particle| {
-        let d = (c1.position - c2.position).length();
-        return d <= c1.radius + c2.radius;
-    };
-
-    for i in 0..circles.len() {
-        for j in i + 1..circles.len() {
-            if collide(&circles[i], &circles[j]) {
-                collisions.push((i, j));
+    for i in 0..particles.len() {
+        for j in i + 1..particles.len() {
+            let c1 = particles[i];
+            let c2 = particles[j];
+            let n = c1.position - c2.position;
+            let d = n.length();
+            if d <= c1.radius + c2.radius {
+                collisions.push(ParticleCollision {
+                    i,
+                    j,
+                    normal: n.normalized(),
+                    penetration: 0.0,
+                });
             }
         }
     }
+    return collisions;
+}
 
-    for (i, j) in collisions {
-        resolve_with_mass(circles, i, j, 1.0);
+fn resolve_particle_collisions(particles: &mut Vec<Particle>, collisions: &Vec<ParticleCollision>) {
+    for coll in collisions {
+        resolve_with_mass(particles, coll.i, coll.j, 1.0);
     }
 }
 
-fn resolve_with_mass(circles: &mut Vec<Particle>, i: usize, j: usize, restitution: f64) {
+fn resolve_with_mass(particles: &mut Vec<Particle>, i: usize, j: usize, restitution: f64) {
     let (c1, c2) = {
-        let (left, right) = circles.split_at_mut(j);
+        let (left, right) = particles.split_at_mut(j);
         (&mut left[i], &mut right[0])
     };
     let n = (c2.position - c1.position).normalized();
