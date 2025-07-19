@@ -106,12 +106,12 @@ fn resolve_particle_collisions(
         unsafe {
             let p1 = particles.get_unchecked_mut(i) as *mut Particle;
             let p2 = particles.get_unchecked_mut(j) as *mut Particle;
-            resolve_with_mass(&mut *p1, &mut *p2, restitution);
+            resolve_particles(&mut *p1, &mut *p2, restitution);
         }
     }
 }
 
-fn resolve_with_mass(p1: &mut Particle, p2: &mut Particle, restitution: f64) {
+fn resolve_particles(p1: &mut Particle, p2: &mut Particle, restitution: f64) {
     let n = (p2.position - p1.position).normalized();
     // velocity from p1 relative to p2 (p2 is a fixed point)
     let rel = p1.velocity - p2.velocity;
