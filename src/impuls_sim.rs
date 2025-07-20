@@ -59,7 +59,7 @@ impl ImpulsSimulation {
     }
 
     pub fn update(&mut self, dt: f64) {
-        // apply gravity
+        // apply gravity and integrate positions
         for s in &mut self.particles {
             s.velocity += self.gravity * dt;
             s.position += s.velocity * dt;
