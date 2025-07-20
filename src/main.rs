@@ -1,4 +1,3 @@
-mod collision_sim;
 mod core;
 mod impuls_sim;
 mod vector2;
@@ -12,7 +11,6 @@ use crate::vector2::Vector2;
 
 #[macroquad::main("Simulation")]
 async fn main() {
-    //let mut sim = collision_sim::CollisionSimulation::new();
     let mut sim = ImpulsSimulation::new();
     sim.initialize();
 

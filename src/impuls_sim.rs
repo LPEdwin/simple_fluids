@@ -1,6 +1,7 @@
 use crate::core::Particle;
 use crate::core::ParticleCollision;
 use crate::core::Rectangle;
+use crate::core::StaticCollision;
 use crate::vector2::Vector2;
 use crate::vector2::dot;
 use macroquad::prelude::*;
@@ -64,17 +65,18 @@ impl ImpulsSimulation {
             s.position += s.velocity * dt;
         }
         // detect collisions
-        let p_collisions = detect_particle_collissions(&mut self.particles);
-        for s in &mut self.particles {
-            boundary_collision(s, &self.boundery, 1.0);
-        }
+        let p_collisions = detect_particle_collissions(&self.particles);
+        let s_collisions = detect_static_collissions(&self.particles, &self.boundery);
+
         // resolve collisions
         resolve_particle_collisions(&mut self.particles, &p_collisions, self.restitution);
-        // correct positions
+        resolve_and_correct_static_collisions(&mut self.particles, &s_collisions, self.restitution);
+
+        // Todo: correct positions
     }
 }
 
-fn detect_particle_collissions(particles: &mut Vec<Particle>) -> Vec<ParticleCollision> {
+fn detect_particle_collissions(particles: &Vec<Particle>) -> Vec<ParticleCollision> {
     let mut collisions = Vec::new();
 
     for i in 0..particles.len() {
@@ -89,6 +91,8 @@ fn detect_particle_collissions(particles: &mut Vec<Particle>) -> Vec<ParticleCol
                     j,
                     normal: n.normalized(),
                     penetration: 0.0,
+                    v_i: c1.velocity,
+                    v_j: c2.velocity,
                 });
             }
         }
@@ -106,12 +110,12 @@ fn resolve_particle_collisions(
         unsafe {
             let p1 = particles.get_unchecked_mut(i) as *mut Particle;
             let p2 = particles.get_unchecked_mut(j) as *mut Particle;
-            apply_impulse(&mut *p1, &mut *p2, restitution);
+            add_impulse(&mut *p1, &mut *p2, restitution);
         }
     }
 }
 
-fn apply_impulse(p1: &mut Particle, p2: &mut Particle, restitution: f64) {
+fn add_impulse(p1: &mut Particle, p2: &mut Particle, restitution: f64) {
     let n = (p2.position - p1.position).normalized();
     // velocity from p1 relative to p2 (p2 is a fixed point)
     let rel = p1.velocity - p2.velocity;
@@ -131,41 +135,66 @@ fn apply_impulse(p1: &mut Particle, p2: &mut Particle, restitution: f64) {
     p2.velocity += n * (j_impulse / mj);
 }
 
-// Restitution is a value from 0 to 1; 1 means perfectly elastic (no energy loss), 0 means perfectly inelastic.
-fn boundary_collision(c: &mut Particle, boundery: &Rectangle, restitution: f64) {
-    const EPS: f64 = 1e-8;
-    if boundery.max.y - (c.position.y + c.radius) < EPS {
-        c.velocity = reflect_collision(c.velocity, Vector2::new(0.0, -1.0), restitution);
-        if (c.position.y + c.radius) - boundery.max.y < 0.0 {
-            c.position.y = -c.radius + boundery.max.y;
-        }
-    }
-    if boundery.max.x - (c.position.x + c.radius) < EPS {
-        c.velocity = reflect_collision(c.velocity, Vector2::new(-1.0, 0.0), restitution);
-        if boundery.max.x - (c.position.x + c.radius) < 0.0 {
-            c.position.x = -c.radius + boundery.max.x;
-        }
-    }
-    if (c.position.y - c.radius) - boundery.min.y < EPS {
-        c.velocity = reflect_collision(c.velocity, Vector2::new(0.0, 1.0), restitution);
-        if (c.position.y - c.radius) - boundery.min.y < 0.0 {
-            c.position.y = c.radius + boundery.min.y;
-        }
-    }
-    if (c.position.x - c.radius) - boundery.min.x < EPS {
-        c.velocity = reflect_collision(c.velocity, Vector2::new(1.0, 0.0), restitution);
-        if (c.position.x - c.radius) - boundery.min.x < 0.0 {
-            c.position.x = c.radius + boundery.min.x;
-        }
-    }
+fn detect_static_collissions(particles: &[Particle], boundery: &Rectangle) -> Vec<StaticCollision> {
+    let mut collisions = Vec::new();
 
-    if c.velocity.length() < EPS {
-        c.velocity = Vector2::ZERO;
+    for (index, p) in particles.iter().enumerate() {
+        let p = particles[index];
+
+        // top
+        if p.position.y + p.radius > boundery.max.y {
+            collisions.push(StaticCollision {
+                index,
+                normal: Vector2::new(0.0, -1.0),
+                penetration: (p.position.y + p.radius) - boundery.max.y,
+                velocity: p.velocity,
+            });
+        }
+
+        // right
+        if p.position.x + p.radius > boundery.max.x {
+            collisions.push(StaticCollision {
+                index,
+                normal: Vector2::new(-1.0, 0.0),
+                penetration: (p.position.x + p.radius) - boundery.max.x,
+                velocity: p.velocity,
+            });
+        }
+
+        // bottom
+        if p.position.y - p.radius < boundery.min.y {
+            let normal = Vector2::new(0.0, 1.0);
+            collisions.push(StaticCollision {
+                index,
+                normal,
+                penetration: boundery.min.y - (p.position.y - p.radius),
+                velocity: p.velocity,
+            });
+        }
+
+        // left
+        if p.position.x - p.radius < boundery.min.x {
+            collisions.push(StaticCollision {
+                index,
+                normal: Vector2::new(1.0, 0.0),
+                penetration: boundery.min.x - (p.position.x - p.radius),
+                velocity: p.velocity,
+            });
+        }
     }
+    return collisions;
 }
 
-fn reflect_collision(velocity: Vector2, surface_normal: Vector2, restitution: f64) -> Vector2 {
-    let normal_component = dot(velocity, surface_normal) * surface_normal;
-    let tangential_component = velocity - normal_component;
-    tangential_component - restitution * normal_component
+// Restitution is a value from 0 to 1; 1 means perfectly elastic (no energy loss), 0 means perfectly inelastic.
+fn resolve_and_correct_static_collisions(
+    particles: &mut [Particle],
+    collisions: &[StaticCollision],
+    restitution: f64,
+) {
+    for c in collisions {
+        let p = &mut particles[c.index];
+        let n = dot(c.normal, c.velocity) * c.normal;
+        p.velocity -= (1.0 + restitution) * n;
+        p.position += c.normal * c.penetration;
+    }
 }
