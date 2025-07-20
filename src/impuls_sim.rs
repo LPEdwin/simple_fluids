@@ -139,8 +139,6 @@ fn detect_static_collissions(particles: &[Particle], boundary: &Rectangle) -> Ve
     let mut collisions = Vec::new();
 
     for (index, p) in particles.iter().enumerate() {
-        let p = particles[index];
-
         // top
         if p.position.y + p.radius > boundary.max.y {
             collisions.push(StaticCollision {
