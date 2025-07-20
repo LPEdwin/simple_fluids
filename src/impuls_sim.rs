@@ -11,7 +11,7 @@ pub struct ImpulsSimulation {
     pub window_height: f32,
     pub view: Rectangle,
     pub particles: Vec<Particle>,
-    pub boundery: Rectangle,
+    pub boundary: Rectangle,
     pub gravity: Vector2,
     pub restitution: f64,
 }
@@ -26,7 +26,7 @@ impl ImpulsSimulation {
                 min: Vector2 { x: 0.0, y: 0.0 },
                 max: Vector2 { x: 2.0, y: 1.0 },
             },
-            boundery: Rectangle {
+            boundary: Rectangle {
                 min: Vector2 { x: 0.0, y: 0.0 },
                 max: Vector2 { x: 2.0, y: 1.0 },
             },
@@ -40,7 +40,7 @@ impl ImpulsSimulation {
         self.particles = Vec::new();
         const RADIUS: f64 = 0.02;
         const EPS: f64 = 1e-8;
-        let boundary = self.boundery;
+        let boundary = self.boundary;
         let spawn_bounds_x = RADIUS + boundary.min.x + EPS..boundary.max.x - RADIUS - EPS;
         let spawn_bounds_y = RADIUS + boundary.min.y + EPS..boundary.max.y - RADIUS - EPS;
 
@@ -66,7 +66,7 @@ impl ImpulsSimulation {
         }
         // detect collisions
         let p_collisions = detect_particle_collissions(&self.particles);
-        let s_collisions = detect_static_collissions(&self.particles, &self.boundery);
+        let s_collisions = detect_static_collissions(&self.particles, &self.boundary);
 
         // resolve collisions
         resolve_particle_collisions(&mut self.particles, &p_collisions, self.restitution);
