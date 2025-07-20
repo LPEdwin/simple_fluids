@@ -81,18 +81,18 @@ fn detect_particle_collissions(particles: &Vec<Particle>) -> Vec<ParticleCollisi
 
     for i in 0..particles.len() {
         for j in i + 1..particles.len() {
-            let c1 = particles[i];
-            let c2 = particles[j];
-            let n = c1.position - c2.position;
+            let p1 = particles[i];
+            let p2 = particles[j];
+            let n = p1.position - p2.position;
             let d = n.length();
-            if d <= c1.radius + c2.radius {
+            if d <= p1.radius + p2.radius {
                 collisions.push(ParticleCollision {
                     i,
                     j,
                     normal: n.normalized(),
-                    penetration: 0.0,
-                    v_i: c1.velocity,
-                    v_j: c2.velocity,
+                    penetration: p1.radius + p2.radius - d,
+                    v_i: p1.velocity,
+                    v_j: p2.velocity,
                 });
             }
         }
