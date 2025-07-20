@@ -135,49 +135,49 @@ fn add_impulse(p1: &mut Particle, p2: &mut Particle, restitution: f64) {
     p2.velocity += n * (j_impulse / mj);
 }
 
-fn detect_static_collissions(particles: &[Particle], boundery: &Rectangle) -> Vec<StaticCollision> {
+fn detect_static_collissions(particles: &[Particle], boundary: &Rectangle) -> Vec<StaticCollision> {
     let mut collisions = Vec::new();
 
     for (index, p) in particles.iter().enumerate() {
         let p = particles[index];
 
         // top
-        if p.position.y + p.radius > boundery.max.y {
+        if p.position.y + p.radius > boundary.max.y {
             collisions.push(StaticCollision {
                 index,
                 normal: Vector2::new(0.0, -1.0),
-                penetration: (p.position.y + p.radius) - boundery.max.y,
+                penetration: (p.position.y + p.radius) - boundary.max.y,
                 velocity: p.velocity,
             });
         }
 
         // right
-        if p.position.x + p.radius > boundery.max.x {
+        if p.position.x + p.radius > boundary.max.x {
             collisions.push(StaticCollision {
                 index,
                 normal: Vector2::new(-1.0, 0.0),
-                penetration: (p.position.x + p.radius) - boundery.max.x,
+                penetration: (p.position.x + p.radius) - boundary.max.x,
                 velocity: p.velocity,
             });
         }
 
         // bottom
-        if p.position.y - p.radius < boundery.min.y {
+        if p.position.y - p.radius < boundary.min.y {
             let normal = Vector2::new(0.0, 1.0);
             collisions.push(StaticCollision {
                 index,
                 normal,
-                penetration: boundery.min.y - (p.position.y - p.radius),
+                penetration: boundary.min.y - (p.position.y - p.radius),
                 velocity: p.velocity,
             });
         }
 
         // left
-        if p.position.x - p.radius < boundery.min.x {
+        if p.position.x - p.radius < boundary.min.x {
             collisions.push(StaticCollision {
                 index,
                 normal: Vector2::new(1.0, 0.0),
-                penetration: boundery.min.x - (p.position.x - p.radius),
+                penetration: boundary.min.x - (p.position.x - p.radius),
                 velocity: p.velocity,
             });
         }
