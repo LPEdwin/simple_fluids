@@ -77,6 +77,8 @@ impl ImpulsSimulation {
             let p = &mut self.particles[c.index];
             p.position += c.normal * c.penetration;
         }
+
+        correct_particle_positions(&mut self.particles, &p_collisions);
     }
 }
 
@@ -198,5 +200,35 @@ fn resolve_static_collisions(
         let p = &mut particles[c.index];
         let n = dot(c.normal, c.velocity) * c.normal;
         p.velocity -= (1.0 + restitution) * n;
+    }
+}
+
+fn correct_particle_positions(particles: &mut [Particle], collisions: &[ParticleCollision]) {
+    for coll in collisions {
+        // get two mutable refs safely
+        let (i, j) = if coll.i < coll.j {
+            (coll.i, coll.j)
+        } else {
+            (coll.j, coll.i)
+        };
+        let (left, right) = particles.split_at_mut(j);
+        let p1 = &mut left[i];
+        let p2 = &mut right[0];
+
+        let normal = coll.normal;
+        let penetration = coll.penetration;
+
+        if penetration <= 0.0 {
+            continue;
+        }
+
+        // compute correction magnitude (reduced mass * penetration)
+        let inv_mass_sum = 1.0 / p1.mass + 1.0 / p2.mass;
+        let correction_mag = penetration / inv_mass_sum;
+        let correction = normal * correction_mag;
+
+        // apply
+        p1.position += correction * (1.0 / p1.mass);
+        p2.position -= correction * (1.0 / p2.mass);
     }
 }
