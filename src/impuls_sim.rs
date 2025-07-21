@@ -70,9 +70,13 @@ impl ImpulsSimulation {
 
         // resolve collisions
         resolve_particle_collisions(&mut self.particles, &p_collisions, self.restitution);
-        resolve_and_correct_static_collisions(&mut self.particles, &s_collisions, self.restitution);
+        resolve_static_collisions(&mut self.particles, &s_collisions, self.restitution);
 
-        // Todo: correct positions
+        // correct positions
+        for c in s_collisions {
+            let p = &mut self.particles[c.index];
+            p.position += c.normal * c.penetration;
+        }
     }
 }
 
@@ -91,6 +95,7 @@ fn detect_particle_collissions(particles: &Vec<Particle>) -> Vec<ParticleCollisi
                     j,
                     normal: n.normalized(),
                     penetration: p1.radius + p2.radius - d,
+                    normal_impulse: 0.0,
                     v_i: p1.velocity,
                     v_j: p2.velocity,
                 });
@@ -184,7 +189,7 @@ fn detect_static_collissions(particles: &[Particle], boundary: &Rectangle) -> Ve
 }
 
 // Restitution is a value from 0 to 1; 1 means perfectly elastic (no energy loss), 0 means perfectly inelastic.
-fn resolve_and_correct_static_collisions(
+fn resolve_static_collisions(
     particles: &mut [Particle],
     collisions: &[StaticCollision],
     restitution: f64,
@@ -193,6 +198,5 @@ fn resolve_and_correct_static_collisions(
         let p = &mut particles[c.index];
         let n = dot(c.normal, c.velocity) * c.normal;
         p.velocity -= (1.0 + restitution) * n;
-        p.position += c.normal * c.penetration;
     }
 }
