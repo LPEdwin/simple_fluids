@@ -1,5 +1,6 @@
 mod core;
 mod impuls_sim;
+mod simulations;
 mod vector2;
 
 use macroquad::prelude::*;
@@ -11,8 +12,7 @@ use crate::vector2::Vector2;
 
 #[macroquad::main("Simulation")]
 async fn main() {
-    let mut sim = ImpulsSimulation::new();
-    sim.initialize();
+    let mut sim = simulations::collision_sim();
     request_new_screen_size(sim.window_width, sim.window_height);
     let fixed_dt = 0.001;
 
