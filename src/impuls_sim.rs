@@ -97,9 +97,8 @@ fn detect_particle_collissions(particles: &Vec<Particle>) -> Vec<ParticleCollisi
                     j,
                     normal: n.normalized(),
                     penetration: p1.radius + p2.radius - d,
-                    normal_impulse: 0.0,
-                    v_i: p1.velocity,
-                    v_j: p2.velocity,
+                    velocity1: p1.velocity,
+                    velocity2: p2.velocity,
                 });
             }
         }
@@ -117,15 +116,21 @@ fn resolve_particle_collisions(
         unsafe {
             let p1 = particles.get_unchecked_mut(i) as *mut Particle;
             let p2 = particles.get_unchecked_mut(j) as *mut Particle;
-            add_impulse(&mut *p1, &mut *p2, restitution);
+            add_impulse(&mut *p1, &mut *p2, coll, restitution);
         }
     }
 }
 
-fn add_impulse(p1: &mut Particle, p2: &mut Particle, restitution: f64) {
+fn add_impulse(
+    p1: &mut Particle,
+    p2: &mut Particle,
+    collision: &ParticleCollision,
+    restitution: f64,
+) {
     let n = (p2.position - p1.position).normalized();
     // velocity from p1 relative to p2 (p2 is a fixed point)
-    let rel = p1.velocity - p2.velocity;
+    let rel = collision.velocity1 - collision.velocity2;
+    //let rel = p1.velocity - p2.velocity;
     let vel_along = dot(rel, n);
     if vel_along <= 0.0 {
         // moving away from p2

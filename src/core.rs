@@ -22,8 +22,8 @@ pub struct ParticleCollision {
     pub j: usize,         // index of circle B
     pub normal: Vector2,  // from B to A
     pub penetration: f64, // how much overlap
-    pub v_i: Vector2,
-    pub v_j: Vector2,
+    pub velocity1: Vector2,
+    pub velocity2: Vector2,
 }
 
 pub struct StaticCollision {
