@@ -13,9 +13,14 @@ use crate::vector2::Vector2;
 async fn main() {
     let mut sim = ImpulsSimulation::new();
     sim.initialize();
-
     request_new_screen_size(sim.window_width, sim.window_height);
+    let fixed_dt = 0.001;
 
+    //run(&mut sim, fixed_dt).await;
+    run_realtime(&mut sim).await;
+}
+
+async fn run_realtime(sim: &mut ImpulsSimulation) {
     loop {
         clear_background(BLACK);
         sim.update(get_frame_time() as f64);
@@ -24,7 +29,18 @@ async fn main() {
     }
 }
 
-pub fn render(circles: &Vec<Particle>, view: &Rectangle) {
+async fn run(sim: &mut ImpulsSimulation, fixed_dt: f64) {
+    loop {
+        clear_background(BLACK);
+
+        sim.update(fixed_dt);
+
+        render(&sim.particles, &sim.view);
+        next_frame().await;
+    }
+}
+
+fn render(circles: &Vec<Particle>, view: &Rectangle) {
     for s in circles {
         draw_circle(
             to_screen(s.position, view).x as f32,
@@ -33,6 +49,9 @@ pub fn render(circles: &Vec<Particle>, view: &Rectangle) {
             s.color,
         );
     }
+
+    let fps_text = format!("FPS: {:.1}", get_fps());
+    draw_text(&fps_text, 10.0, 20.0, 20.0, WHITE);
 }
 
 fn get_screen_size() -> Vector2 {
