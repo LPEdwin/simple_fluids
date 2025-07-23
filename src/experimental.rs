@@ -9,7 +9,7 @@ use crate::{
 // if using this, you need to remove the add impulse methods
 pub fn correct_positions_baumgarte(
     bodies: &mut [Particle],
-    collisions: &mut [ParticleCollision],
+    collisions: &[ParticleCollision],
     restitution: f64,
     dt: f64,
     iterations: usize,
@@ -21,7 +21,7 @@ pub fn correct_positions_baumgarte(
 
 fn solve_contacts_pgs_baumgarte(
     bodies: &mut [Particle],
-    collisions: &mut [ParticleCollision],
+    collisions: &[ParticleCollision],
     restitution: f64,
     dt: f64,
 ) {
