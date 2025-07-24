@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::{impuls_sim::ImpulsSimulation, vector2::Vector2};
+use crate::{simulation::Simulation, vector2::Vector2};
 
 #[derive(Debug, Default)]
 pub struct SimulationInformation {
@@ -8,7 +8,7 @@ pub struct SimulationInformation {
 }
 
 impl SimulationInformation {
-    pub fn update(&mut self, sim: &mut ImpulsSimulation, fixed_dt: f64) {
+    pub fn update(&mut self, sim: &mut Simulation, fixed_dt: f64) {
         for (index, trail) in &mut self.trails {
             let p = sim.particles[*index];
             trail.push(p.position);

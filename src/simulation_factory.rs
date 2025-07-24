@@ -2,14 +2,14 @@ use macroquad::color::Color;
 
 use crate::{
     core::{Particle, Rectangle},
-    impuls_sim::ImpulsSimulation,
+    simulation::Simulation,
     vector2::Vector2,
 };
 
 const GREEN: Color = Color::new(0.0, 0.8667, 0.8353, 1.0);
 const RED: Color = Color::new(0.9254, 0.0745, 0.2745, 1.0);
 
-pub fn collision_sim() -> ImpulsSimulation {
+pub fn collision_sim() -> Simulation {
     const EPS: f64 = 1e-8;
     const RADIUS: f64 = 0.02;
 
@@ -31,7 +31,7 @@ pub fn collision_sim() -> ImpulsSimulation {
         });
     }
 
-    ImpulsSimulation {
+    Simulation {
         window_width: 800.0,
         window_height: 400.0,
         particles,
@@ -43,7 +43,7 @@ pub fn collision_sim() -> ImpulsSimulation {
     }
 }
 
-pub fn mixing_sim() -> ImpulsSimulation {
+pub fn mixing_sim() -> Simulation {
     const EPS: f64 = 1e-8;
     const RADIUS: f64 = 0.01;
     const COUNT: usize = 1000;
@@ -77,7 +77,7 @@ pub fn mixing_sim() -> ImpulsSimulation {
         });
     }
 
-    ImpulsSimulation {
+    Simulation {
         window_width: 400.0,
         window_height: 800.0,
         particles,
@@ -89,7 +89,7 @@ pub fn mixing_sim() -> ImpulsSimulation {
     }
 }
 
-pub fn brownian_motion_sim() -> ImpulsSimulation {
+pub fn brownian_motion_sim() -> Simulation {
     const EPS: f64 = 1e-8;
     const RADIUS: f64 = 0.005;
     const MASS: f64 = 1.0;
@@ -124,7 +124,7 @@ pub fn brownian_motion_sim() -> ImpulsSimulation {
         color: RED,
     });
 
-    ImpulsSimulation {
+    Simulation {
         window_width: 500.0,
         window_height: 500.0,
         particles,

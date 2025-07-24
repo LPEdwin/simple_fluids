@@ -1,21 +1,21 @@
 mod core;
-mod impuls_sim;
 mod render;
+mod simulation;
+mod simulation_factory;
 mod simulation_information;
-mod simulations;
 mod vector2;
 
 use macroquad::prelude::*;
 
 use crate::{
-    impuls_sim::ImpulsSimulation,
     render::{draw_trail, render},
+    simulation::Simulation,
     simulation_information::SimulationInformation,
 };
 
 #[macroquad::main("Simulation")]
 async fn main() {
-    let mut sim = simulations::brownian_motion_sim();
+    let mut sim = simulation_factory::brownian_motion_sim();
     request_new_screen_size(sim.window_width, sim.window_height);
     let fixed_dt = 0.001;
     let mut info = SimulationInformation::default();
@@ -32,7 +32,7 @@ async fn main() {
     //run_realtime(&mut sim, &mut info).await;
 }
 
-async fn run_realtime(sim: &mut ImpulsSimulation, info: &mut SimulationInformation) {
+async fn run_realtime(sim: &mut Simulation, info: &mut SimulationInformation) {
     loop {
         clear_background(BLACK);
         let dt = get_frame_time() as f64;
@@ -49,7 +49,7 @@ async fn run_realtime(sim: &mut ImpulsSimulation, info: &mut SimulationInformati
     }
 }
 
-async fn run(sim: &mut ImpulsSimulation, fixed_dt: f64, info: &mut SimulationInformation) {
+async fn run(sim: &mut Simulation, fixed_dt: f64, info: &mut SimulationInformation) {
     loop {
         clear_background(BLACK);
         sim.update(fixed_dt);

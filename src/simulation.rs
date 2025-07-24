@@ -7,7 +7,7 @@ use crate::vector2::dot;
 use macroquad::prelude::*;
 
 #[derive(Default)]
-pub struct ImpulsSimulation {
+pub struct Simulation {
     pub window_width: f32,
     pub window_height: f32,
     pub view: Rectangle,
@@ -17,7 +17,7 @@ pub struct ImpulsSimulation {
     pub restitution: f64,
 }
 
-impl ImpulsSimulation {
+impl Simulation {
     pub fn update(&mut self, dt: f64) {
         // apply gravity and integrate positions
         for s in &mut self.particles {
