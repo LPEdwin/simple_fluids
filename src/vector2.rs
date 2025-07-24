@@ -155,6 +155,19 @@ impl Vector2 {
         })
     }
 
+    pub fn random_gaussian(mean: f64, std_dev: f64) -> Vector2 {
+        use rand_distr::Normal;
+
+        RNG.with(|cell| {
+            let rng = unsafe { &mut *cell.get() };
+            let normal = Normal::new(mean, std_dev).unwrap();
+            let x: f64 = normal.sample(rng);
+            let y: f64 = normal.sample(rng);
+
+            Vector2 { x, y }
+        })
+    }
+
     pub fn reflect(self, n: Vector2) -> Vector2 {
         return self - 2.0 * dot(self, n) * n;
     }
