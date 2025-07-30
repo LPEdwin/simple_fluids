@@ -5,6 +5,7 @@ use crate::{simulation::Simulation, vector2::Vector2};
 #[derive(Debug, Default)]
 pub struct SimulationInformation {
     pub trails: HashMap<usize, Vec<Vector2>>,
+    pub simulation_speed: f64,
 }
 
 impl SimulationInformation {
