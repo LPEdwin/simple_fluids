@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::core::Particle;
 use crate::core::ParticleCollision;
 use crate::core::Rectangle;
@@ -15,6 +17,7 @@ pub struct Simulation {
     pub boundary: Rectangle,
     pub gravity: Vector2,
     pub restitution: f64,
+    pub trails: HashMap<usize, Vec<Vector2>>,
 }
 
 impl Simulation {
@@ -40,6 +43,18 @@ impl Simulation {
         }
 
         correct_particle_positions(&mut self.particles, &p_collisions, dt);
+
+        self.update_trails();
+    }
+
+    fn update_trails(&mut self) {
+        for (index, trail) in &mut self.trails {
+            let p = self.particles[*index];
+            trail.push(p.position);
+            if trail.len() > 500 {
+                trail.remove(0);
+            }
+        }
     }
 }
 

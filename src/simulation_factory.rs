@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use macroquad::color::Color;
 
 use crate::{
@@ -116,13 +118,16 @@ pub fn brownian_motion_sim() -> Simulation {
         });
     }
 
-    particles.push(Particle {
+    let big_p = Particle {
         mass: MASS * 100.0,
         position: Vector2::random_in_rectangle(spawn_bounds_x.clone(), spawn_bounds_y.clone()),
         velocity: Vector2::ZERO,
         radius: RADIUS * 10.0,
         color: RED,
-    });
+    };
+    particles.push(big_p);
+    let mut trails: HashMap<usize, Vec<Vector2>> = HashMap::new();
+    trails.insert(particles.len() - 1, Vec::new());
 
     Simulation {
         window_width: 500.0,
@@ -132,6 +137,7 @@ pub fn brownian_motion_sim() -> Simulation {
         boundary,
         gravity: Vector2::ZERO,
         restitution: 1.0,
+        trails,
         ..Default::default()
     }
 }
