@@ -17,6 +17,16 @@ pub struct Rectangle {
     pub max: Vector2,
 }
 
+impl Rectangle {
+    pub fn width(self) -> f64 {
+        self.max.x - self.min.x
+    }
+
+    pub fn height(self) -> f64 {
+        self.max.y - self.min.y
+    }
+}
+
 pub struct ParticleCollision {
     pub i: usize,         // index of circle A
     pub j: usize,         // index of circle B
