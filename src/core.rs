@@ -25,6 +25,13 @@ impl Rectangle {
     pub fn height(self) -> f64 {
         self.max.y - self.min.y
     }
+    
+    pub fn contains(&self, point: Vector2) -> bool {
+        point.x >= self.min.x
+            && point.x <= self.max.x
+            && point.y >= self.min.y
+            && point.y <= self.max.y
+    }
 }
 
 pub struct ParticleCollision {
