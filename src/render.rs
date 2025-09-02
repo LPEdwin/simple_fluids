@@ -59,7 +59,7 @@ pub async fn run_realtime(sim: &mut Simulation) {
     }
 }
 
-fn render_particles(particle: &Vec<Particle>, view: &Rectangle) {
+pub fn render_particles(particle: &Vec<Particle>, view: &Rectangle) {
     for p in particle {
         draw_circle(
             to_screen(p.position, view).x as f32,
