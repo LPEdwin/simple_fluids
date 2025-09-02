@@ -44,6 +44,28 @@ impl UniformGrid {
         }
     }
 
+    pub fn with_cell_size(boundary: Rectangle, cell_size: f64) -> UniformGrid {
+        let width = boundary.width();
+        let height = boundary.height();
+
+        let n_col = (width / cell_size).floor().max(1.0) as usize;
+        let n_row = (height / cell_size).floor().max(1.0) as usize;
+
+        let cell_width = width / n_col as f64;
+        let cell_height = height / n_row as f64;
+
+        let cells = vec![HashSet::new(); n_col * n_row];
+
+        UniformGrid {
+            cells,
+            cell_width,
+            cell_height,
+            boundary,
+            n_col,
+            n_row,
+        }
+    }
+
     pub fn get_close_colliders(&self, p: &Particle) -> Vec<usize> {
         let (col, row) = self.get_cell_indices(p);
 
@@ -99,5 +121,11 @@ impl UniformGrid {
             let cell_index = self.get_cell_index(col, row);
             self.cells[cell_index].insert(p_index);
         }
+    }
+
+    pub fn add_particle(&mut self, index: usize, particle: &Particle) {
+        let (col, row) = self.get_cell_indices(particle);
+        let cell_index = self.get_cell_index(col, row);
+        self.cells[cell_index].insert(index);
     }
 }
