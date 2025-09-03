@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use macroquad::color::Color;
+use rand_pcg::Pcg64Mcg;
 
 use crate::{
     core::{Particle, Rectangle},
@@ -142,18 +143,18 @@ pub fn brownian_motion_sim() -> Simulation {
     }
 }
 
-use rand::Rng;
+use rand::{Rng, SeedableRng};
 
 /// Randomly generates `count` non-overlapping particles inside `boundary`.
 /// Each particle has the given `radius`, and up to `max_attempts_per_particle` trials are made.
-pub fn generate_non_overlapping_particles(
+fn generate_non_overlapping_particles(
     boundary: Rectangle,
     radius: f64,
     count: usize,
     max_attempts_per_particle: usize,
     color: Color,
 ) -> Vec<Particle> {
-    let mut rng = rand::thread_rng();
+    let mut rng = Pcg64Mcg::from_rng(&mut rand::rng());
     let mut particles = Vec::with_capacity(count);
     let mut grid = crate::uniform_grid::UniformGrid::with_cell_size(boundary, 2.0 * radius);
 
@@ -161,8 +162,8 @@ pub fn generate_non_overlapping_particles(
         let mut placed = false;
 
         for _ in 0..max_attempts_per_particle {
-            let x = rng.gen_range(boundary.min.x + radius..=boundary.max.x - radius);
-            let y = rng.gen_range(boundary.min.y + radius..=boundary.max.y - radius);
+            let x = rng.random_range(boundary.min.x + radius..=boundary.max.x - radius);
+            let y = rng.random_range(boundary.min.y + radius..=boundary.max.y - radius);
             let position = Vector2 { x, y };
 
             let candidate = Particle {
