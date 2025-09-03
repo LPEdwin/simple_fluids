@@ -141,3 +141,68 @@ pub fn brownian_motion_sim() -> Simulation {
         ..Default::default()
     }
 }
+
+use rand::Rng;
+
+/// Randomly generates `count` non-overlapping particles inside `boundary`.
+/// Each particle has the given `radius`, and up to `max_attempts_per_particle` trials are made.
+pub fn generate_non_overlapping_particles(
+    boundary: Rectangle,
+    radius: f64,
+    count: usize,
+    max_attempts_per_particle: usize,
+    color: Color,
+) -> Vec<Particle> {
+    let mut rng = rand::thread_rng();
+    let mut particles = Vec::with_capacity(count);
+    let mut grid = crate::uniform_grid::UniformGrid::with_cell_size(boundary, 2.0 * radius);
+
+    while particles.len() < count {
+        let mut placed = false;
+
+        for _ in 0..max_attempts_per_particle {
+            let x = rng.gen_range(boundary.min.x + radius..=boundary.max.x - radius);
+            let y = rng.gen_range(boundary.min.y + radius..=boundary.max.y - radius);
+            let position = Vector2 { x, y };
+
+            let candidate = Particle {
+                position,
+                radius,
+                velocity: Vector2::ZERO,
+                mass: std::f64::consts::PI * radius * radius,
+                color,
+            };
+
+            // Check local neighbors via uniform grid
+            let neighbors = grid.get_close_colliders(&candidate);
+            let mut overlaps = false;
+            for &j in &neighbors {
+                let other: &Particle = &particles[j];
+                let dist_sq = (candidate.position - other.position).length_squared();
+                if dist_sq < (2.0 * radius).powi(2) {
+                    overlaps = true;
+                    break;
+                }
+            }
+
+            if !overlaps {
+                let idx = particles.len();
+                particles.push(candidate);
+                grid.add_particle(idx, &candidate);
+                placed = true;
+                break;
+            }
+        }
+
+        if !placed {
+            eprintln!(
+                "Warning: only placed {} out of {} particles due to overlap constraints.",
+                particles.len(),
+                count
+            );
+            break;
+        }
+    }
+
+    particles
+}
