@@ -89,39 +89,76 @@ pub fn mixing_sim() -> Simulation {
 }
 
 pub fn brownian_motion_sim() -> Simulation {
-    const EPS: f64 = 1e-8;
     const RADIUS: f64 = 0.005;
+    const BIG_RADIUS: f64 = RADIUS * 10.0;
     const MASS: f64 = 1.0;
+    const COUNT: usize = 1000;
+
+    let mut rng = Pcg64Mcg::from_rng(&mut rand::rng());
 
     let boundary = Rectangle {
         min: Vector2 { x: 0.0, y: 0.0 },
         max: Vector2 { x: 2.0, y: 1.0 },
     };
-    let spawn_bounds_x = RADIUS + boundary.min.x + EPS..boundary.max.x - RADIUS - EPS;
-    let spawn_bounds_y = RADIUS + boundary.min.y + EPS..boundary.max.y - RADIUS - EPS;
 
+    // Generate small particles using generate_non_overlapping_particles
+    let mut particles =
+        generate_non_overlapping_particles(boundary, RADIUS, COUNT, 10, GREEN, &mut rng);
+
+    // Set masses and velocities for small particles
     const KB: f64 = 1.0; // Boltzmann constant, normalized
     const T: f64 = 1.0; // arbitrary temperature
     let sigma = (KB * T / MASS).sqrt();
 
-    let mut particles = Vec::new();
-    for _ in 0..1000 {
-        particles.push(Particle {
-            mass: MASS,
-            position: Vector2::random_in_rectangle(spawn_bounds_x.clone(), spawn_bounds_y.clone()),
-            velocity: Vector2::random_gaussian(0.0, sigma),
-            radius: RADIUS,
-            color: GREEN,
-        });
+    for p in &mut particles {
+        p.mass = MASS;
+        p.velocity = Vector2::random_gaussian(0.0, sigma);
     }
 
-    let big_p = Particle {
+    // Generate big particle, ensuring no overlap with small particles
+    let mut big_particle_placed = false;
+    let mut big_p = Particle {
         mass: MASS * 100.0,
-        position: Vector2::random_in_rectangle(spawn_bounds_x.clone(), spawn_bounds_y.clone()),
+        position: Vector2::ZERO, // Will be set
         velocity: Vector2::ZERO,
-        radius: RADIUS * 10.0,
+        radius: BIG_RADIUS,
         color: RED,
     };
+
+    // Create a grid for overlap checking with the big particle
+    let mut grid = crate::uniform_grid::UniformGrid::with_cell_size(boundary, 2.0 * BIG_RADIUS);
+    for (i, p) in particles.iter().enumerate() {
+        grid.add_particle(i, p);
+    }
+
+    for _ in 0..1000 {
+        // Try up to 100 times to place big particle
+        let x = rng.random_range(boundary.min.x + BIG_RADIUS..=boundary.max.x - BIG_RADIUS);
+        let y = rng.random_range(boundary.min.y + BIG_RADIUS..=boundary.max.y - BIG_RADIUS);
+        big_p.position = Vector2 { x, y };
+
+        // Check for overlaps with small particles
+        let neighbors = grid.get_close_colliders(&big_p);
+        let mut overlaps = false;
+        for &j in &neighbors {
+            let other = &particles[j];
+            let dist_sq = (big_p.position - other.position).length_squared();
+            if dist_sq < (BIG_RADIUS + other.radius).powi(2) {
+                overlaps = true;
+                break;
+            }
+        }
+
+        if !overlaps {
+            big_particle_placed = true;
+            break;
+        }
+    }
+
+    if !big_particle_placed {
+        panic!("Error: Could not place big particle without overlapping small particles.");
+    }
+
     particles.push(big_p);
     let mut trails: HashMap<usize, Vec<Vector2>> = HashMap::new();
     trails.insert(particles.len() - 1, Vec::new());
