@@ -13,25 +13,16 @@ const GREEN: Color = Color::new(0.0, 0.8667, 0.8353, 1.0);
 const RED: Color = Color::new(0.9254, 0.0745, 0.2745, 1.0);
 
 pub fn collision_sim() -> Simulation {
-    const EPS: f64 = 1e-8;
-    const RADIUS: f64 = 0.02;
+    let mut rng = Pcg64Mcg::from_rng(&mut rand::rng());
 
     let boundary = Rectangle {
         min: Vector2 { x: 0.0, y: 0.0 },
         max: Vector2 { x: 2.0, y: 1.0 },
     };
-    let spawn_bounds_x = RADIUS + boundary.min.x + EPS..boundary.max.x - RADIUS - EPS;
-    let spawn_bounds_y = RADIUS + boundary.min.y + EPS..boundary.max.y - RADIUS - EPS;
 
-    let mut particles = Vec::new();
-    for _ in 0..100 {
-        particles.push(Particle {
-            mass: std::f64::consts::PI * RADIUS * RADIUS,
-            position: Vector2::random_in_rectangle(spawn_bounds_x.clone(), spawn_bounds_y.clone()),
-            velocity: Vector2::random_in_disk() * 0.5,
-            radius: RADIUS,
-            color: GREEN,
-        });
+    let mut particles = generate_non_overlapping_particles(boundary, 0.02, 100, 5, GREEN, &mut rng);
+    for p in &mut particles {
+        p.velocity = Vector2::random_in_disk() * 0.5;
     }
 
     Simulation {
@@ -149,28 +140,31 @@ use rand::{Rng, SeedableRng};
 /// Each particle has the given `radius`, and up to `max_attempts_per_particle` trials are made.
 fn generate_non_overlapping_particles(
     boundary: Rectangle,
-    radius: f64,
+    particle_radius: f64,
     count: usize,
     max_attempts_per_particle: usize,
     color: Color,
+    rng: &mut impl Rng,
 ) -> Vec<Particle> {
-    let mut rng = Pcg64Mcg::from_rng(&mut rand::rng());
     let mut particles = Vec::with_capacity(count);
-    let mut grid = crate::uniform_grid::UniformGrid::with_cell_size(boundary, 2.0 * radius);
+    let mut grid =
+        crate::uniform_grid::UniformGrid::with_cell_size(boundary, 2.0 * particle_radius);
 
     while particles.len() < count {
         let mut placed = false;
 
         for _ in 0..max_attempts_per_particle {
-            let x = rng.random_range(boundary.min.x + radius..=boundary.max.x - radius);
-            let y = rng.random_range(boundary.min.y + radius..=boundary.max.y - radius);
+            let x = rng
+                .random_range(boundary.min.x + particle_radius..=boundary.max.x - particle_radius);
+            let y = rng
+                .random_range(boundary.min.y + particle_radius..=boundary.max.y - particle_radius);
             let position = Vector2 { x, y };
 
             let candidate = Particle {
                 position,
-                radius,
+                radius: particle_radius,
                 velocity: Vector2::ZERO,
-                mass: std::f64::consts::PI * radius * radius,
+                mass: std::f64::consts::PI * particle_radius * particle_radius,
                 color,
             };
 
@@ -180,7 +174,7 @@ fn generate_non_overlapping_particles(
             for &j in &neighbors {
                 let other: &Particle = &particles[j];
                 let dist_sq = (candidate.position - other.position).length_squared();
-                if dist_sq < (2.0 * radius).powi(2) {
+                if dist_sq < (2.0 * particle_radius).powi(2) {
                     overlaps = true;
                     break;
                 }
