@@ -13,6 +13,8 @@ const GREEN: Color = Color::new(0.0, 0.8667, 0.8353, 1.0);
 const RED: Color = Color::new(0.9254, 0.0745, 0.2745, 1.0);
 
 pub fn collision_sim() -> Simulation {
+    const RADIUS: f64 = 0.02;
+
     let mut rng = Pcg64Mcg::from_rng(&mut rand::rng());
 
     let boundary = Rectangle {
@@ -20,8 +22,10 @@ pub fn collision_sim() -> Simulation {
         max: Vector2 { x: 2.0, y: 1.0 },
     };
 
-    let mut particles = generate_non_overlapping_particles(boundary, 0.02, 100, 5, GREEN, &mut rng);
+    let mut particles =
+        generate_non_overlapping_particles(boundary, RADIUS, 100, 5, GREEN, &mut rng);
     for p in &mut particles {
+        p.mass = std::f64::consts::PI * RADIUS * RADIUS;
         p.velocity = Vector2::random_in_disk() * 0.5;
     }
 
@@ -38,37 +42,38 @@ pub fn collision_sim() -> Simulation {
 }
 
 pub fn mixing_sim() -> Simulation {
-    const EPS: f64 = 1e-8;
     const RADIUS: f64 = 0.01;
-    const COUNT: usize = 1000;
+    const COUNT: usize = 300;
+
+    let mut rng = Pcg64Mcg::from_rng(&mut rand::rng());
 
     let boundary = Rectangle {
         min: Vector2 { x: 0.0, y: 0.0 },
         max: Vector2 { x: 1.0, y: 2.0 },
     };
-    let spawn_bounds_x = RADIUS + boundary.min.x + EPS..boundary.max.x - RADIUS - EPS;
-    let spawn_bounds_y1 = RADIUS + boundary.min.y + EPS..boundary.max.y / 2.0 - RADIUS;
-    let spawn_bounds_y2 = RADIUS + boundary.max.y / 2.0 + EPS..boundary.max.y - RADIUS;
 
-    let mut particles = Vec::new();
-    for _ in 0..COUNT {
-        particles.push(Particle {
-            mass: std::f64::consts::PI * RADIUS * RADIUS,
-            position: Vector2::random_in_rectangle(spawn_bounds_x.clone(), spawn_bounds_y1.clone()),
-            velocity: Vector2::random_in_disk() * 0.5,
-            radius: RADIUS,
-            color: GREEN,
-        });
-    }
+    let top_boundary = Rectangle {
+        min: Vector2 { x: 0.0, y: 1.0 },
+        max: Vector2 { x: 1.0, y: 2.0 },
+    };
 
-    for _ in 0..COUNT {
-        particles.push(Particle {
-            mass: std::f64::consts::PI * RADIUS * RADIUS,
-            position: Vector2::random_in_rectangle(spawn_bounds_x.clone(), spawn_bounds_y2.clone()),
-            velocity: Vector2::random_in_disk() * 0.5,
-            radius: RADIUS,
-            color: RED,
-        });
+    let top_particles =
+        generate_non_overlapping_particles(top_boundary, RADIUS, COUNT, 5, GREEN, &mut rng);
+
+    let bottom_boundary = Rectangle {
+        min: Vector2 { x: 0.0, y: 0.0 },
+        max: Vector2 { x: 1.0, y: 1.0 },
+    };
+
+    let bottom_particles =
+        generate_non_overlapping_particles(bottom_boundary, RADIUS, COUNT, 5, RED, &mut rng);
+
+    let mut particles = top_particles;
+    particles.extend(bottom_particles);
+
+    for p in &mut particles {
+        p.mass = std::f64::consts::PI * RADIUS * RADIUS;
+        p.velocity = Vector2::random_in_disk() * 0.5;
     }
 
     Simulation {
