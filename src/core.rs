@@ -11,6 +11,12 @@ pub struct Particle {
     pub color: Color,
 }
 
+impl Particle {
+    pub fn collides(self, other: &Particle) -> bool {
+        (self.position - other.position).length_squared() < (self.radius + other.radius).powi(2)
+    }
+}
+
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Rectangle {
     pub min: Vector2,
@@ -25,7 +31,7 @@ impl Rectangle {
     pub fn height(self) -> f64 {
         self.max.y - self.min.y
     }
-    
+
     pub fn contains(&self, point: Vector2) -> bool {
         point.x >= self.min.x
             && point.x <= self.max.x
