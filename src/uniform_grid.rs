@@ -1,6 +1,9 @@
 use std::collections::HashSet;
 
-use crate::core::{Particle, Rectangle};
+use crate::{
+    core::{Particle, Rectangle},
+    vector2::{self, Vector2},
+};
 
 pub struct UniformGrid {
     cells: Vec<HashSet<usize>>,
@@ -66,8 +69,16 @@ impl UniformGrid {
         }
     }
 
-    pub fn get_close_colliders(&self, p: &Particle) -> Vec<usize> {
-        let (col, row) = self.get_cell_indices(p);
+    pub fn get_close_colliders_by_particle(&self, p: &Particle) -> Vec<usize> {
+        self.get_close_colliders(p.position)
+    }
+
+    fn get_cell_indices_by_particle(&self, p: &Particle) -> (usize, usize) {
+        self.get_cell_indices(p.position)
+    }
+
+    pub fn get_close_colliders(&self, position: Vector2) -> Vec<usize> {
+        let (col, row) = self.get_cell_indices(position);
 
         let mut indices = HashSet::new();
 
@@ -82,9 +93,9 @@ impl UniformGrid {
         indices.into_iter().collect()
     }
 
-    fn get_cell_indices(&self, p: &Particle) -> (usize, usize) {
-        let col = ((p.position.x - self.boundary.min.x) / self.cell_width).floor() as usize;
-        let row = ((p.position.y - self.boundary.min.y) / self.cell_height).floor() as usize;
+    fn get_cell_indices(&self, position: Vector2) -> (usize, usize) {
+        let col = ((position.x - self.boundary.min.x) / self.cell_width).floor() as usize;
+        let row = ((position.y - self.boundary.min.y) / self.cell_height).floor() as usize;
 
         let col = col.clamp(0, self.n_col - 1) as usize;
         let row = row.clamp(0, self.n_row - 1) as usize;
@@ -117,15 +128,50 @@ impl UniformGrid {
         self.clear();
 
         for (p_index, p) in particles.iter().enumerate() {
-            let (col, row) = self.get_cell_indices(p);
+            let (col, row) = self.get_cell_indices_by_particle(p);
             let cell_index = self.get_cell_index(col, row);
             self.cells[cell_index].insert(p_index);
         }
     }
 
     pub fn add_particle(&mut self, index: usize, particle: &Particle) {
-        let (col, row) = self.get_cell_indices(particle);
+        let (col, row) = self.get_cell_indices_by_particle(particle);
         let cell_index = self.get_cell_index(col, row);
         self.cells[cell_index].insert(index);
+    }
+
+    /// Trys to place the particle without overlapping.
+    /// Errors if not possible.
+    pub fn try_place_particle(
+        &mut self,
+        particle: &mut Particle,
+        particles: &[Particle],
+        attempts_count: u32,
+    ) -> Result<(), String> {
+        if particle.radius > self.cell_height {
+            return Err("Radius is greater than the grids.".to_string());
+        }
+
+        for _ in 0..attempts_count {
+            let position = vector2::Vector2::random_min_max(
+                self.boundary.min + particle.radius,
+                self.boundary.max,
+            );
+            let neighbours = self.get_close_colliders(position);
+            let mut overlaps = false;
+            for idx in neighbours {
+                if particles[idx].collides(particle) {
+                    overlaps = true;
+                    break;
+                }
+            }
+            if !overlaps {
+                particle.position = position;
+                self.add_particle(particles.len(), particle);
+                return Ok(());
+            }
+        }
+
+        Err("Couldn't be placed.".to_string())
     }
 }
