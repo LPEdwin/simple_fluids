@@ -138,7 +138,7 @@ pub fn brownian_motion_sim() -> Simulation {
         big_p.position = Vector2 { x, y };
 
         // Check for overlaps with small particles
-        let neighbors = grid.get_close_colliders(&big_p);
+        let neighbors = grid.get_close_colliders(big_p.position);
         let mut overlaps = false;
         for &j in &neighbors {
             let other = &particles[j];
@@ -211,7 +211,7 @@ fn generate_non_overlapping_particles(
             };
 
             // Check local neighbors via uniform grid
-            let neighbors = grid.get_close_colliders(&candidate);
+            let neighbors = grid.get_close_colliders(candidate.position);
             let mut overlaps = false;
             for &j in &neighbors {
                 let other: &Particle = &particles[j];
