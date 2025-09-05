@@ -3,7 +3,7 @@ use rand_pcg::Pcg64Mcg;
 use std::cell::UnsafeCell;
 
 thread_local! {
-    static RNG: UnsafeCell<Pcg64Mcg> = UnsafeCell::new(Pcg64Mcg::from_rng(&mut rand::rng()));
+    static RNG: UnsafeCell<Pcg64Mcg> = UnsafeCell::new(Pcg64Mcg::seed_from_u64(12345));
 }
 
 #[derive(Debug, Default, Clone, Copy)]
