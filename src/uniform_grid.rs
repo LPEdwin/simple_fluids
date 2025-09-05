@@ -146,13 +146,13 @@ impl UniformGrid {
         &mut self,
         particle: &mut Particle,
         particles: &[Particle],
-        attempts_count: u32,
+        max_attempts_per_particle: u32,
     ) -> Result<(), String> {
         if particle.radius > self.cell_height {
             return Err("Radius is greater than the grids.".to_string());
         }
 
-        for _ in 0..attempts_count {
+        for _ in 0..max_attempts_per_particle {
             let position = vector2::Vector2::random_min_max(
                 self.boundary.min + particle.radius,
                 self.boundary.max,
