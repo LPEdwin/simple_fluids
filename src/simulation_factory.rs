@@ -15,15 +15,12 @@ const RED: Color = Color::new(0.9254, 0.0745, 0.2745, 1.0);
 pub fn collision_sim() -> Simulation {
     const RADIUS: f64 = 0.02;
 
-    let mut rng = Pcg64Mcg::from_rng(&mut rand::rng());
-
     let boundary = Rectangle {
         min: Vector2 { x: 0.0, y: 0.0 },
         max: Vector2 { x: 2.0, y: 1.0 },
     };
 
-    let mut particles =
-        generate_non_overlapping_particles(boundary, RADIUS, 100, 5, GREEN, &mut rng);
+    let mut particles = generate_non_overlapping_particles(boundary, RADIUS, 100, 5);
     for p in &mut particles {
         p.mass = std::f64::consts::PI * RADIUS * RADIUS;
         p.velocity = Vector2::random_in_disk() * 0.5;
@@ -45,8 +42,6 @@ pub fn mixing_sim() -> Simulation {
     const RADIUS: f64 = 0.01;
     const COUNT: usize = 300;
 
-    let mut rng = Pcg64Mcg::from_rng(&mut rand::rng());
-
     let boundary = Rectangle {
         min: Vector2 { x: 0.0, y: 0.0 },
         max: Vector2 { x: 1.0, y: 2.0 },
@@ -57,16 +52,18 @@ pub fn mixing_sim() -> Simulation {
         max: Vector2 { x: 1.0, y: 2.0 },
     };
 
-    let top_particles =
-        generate_non_overlapping_particles(top_boundary, RADIUS, COUNT, 5, GREEN, &mut rng);
+    let top_particles = generate_non_overlapping_particles(top_boundary, RADIUS, COUNT, 5);
 
     let bottom_boundary = Rectangle {
         min: Vector2 { x: 0.0, y: 0.0 },
         max: Vector2 { x: 1.0, y: 1.0 },
     };
 
-    let bottom_particles =
-        generate_non_overlapping_particles(bottom_boundary, RADIUS, COUNT, 5, RED, &mut rng);
+    let mut bottom_particles =
+        generate_non_overlapping_particles(bottom_boundary, RADIUS, COUNT, 5);
+    for p in &mut bottom_particles {
+        p.color = RED;
+    }
 
     let mut particles = top_particles;
     particles.extend(bottom_particles);
@@ -102,8 +99,7 @@ pub fn brownian_motion_sim() -> Simulation {
     };
 
     // Generate small particles using generate_non_overlapping_particles
-    let mut particles =
-        generate_non_overlapping_particles(boundary, RADIUS, COUNT, 10, GREEN, &mut rng);
+    let mut particles = generate_non_overlapping_particles(boundary, RADIUS, COUNT, 10);
 
     // Set masses and velocities for small particles
     const KB: f64 = 1.0; // Boltzmann constant, normalized
@@ -178,66 +174,44 @@ pub fn brownian_motion_sim() -> Simulation {
 
 use rand::{Rng, SeedableRng};
 
-/// Randomly generates `count` non-overlapping particles inside `boundary`.
-/// Each particle has the given `radius`, and up to `max_attempts_per_particle` trials are made.
 fn generate_non_overlapping_particles(
     boundary: Rectangle,
     particle_radius: f64,
     count: usize,
     max_attempts_per_particle: usize,
-    color: Color,
-    rng: &mut impl Rng,
 ) -> Vec<Particle> {
     let mut particles = Vec::with_capacity(count);
     let mut grid =
         crate::uniform_grid::UniformGrid::with_cell_size(boundary, 2.0 * particle_radius);
 
     while particles.len() < count {
-        let mut placed = false;
+        let mut particle = Particle {
+            position: Vector2::ZERO,
+            radius: particle_radius,
+            velocity: Vector2::ZERO,
+            mass: std::f64::consts::PI * particle_radius * particle_radius,
+            color: GREEN,
+        };
 
-        for _ in 0..max_attempts_per_particle {
-            let x = rng
-                .random_range(boundary.min.x + particle_radius..=boundary.max.x - particle_radius);
-            let y = rng
-                .random_range(boundary.min.y + particle_radius..=boundary.max.y - particle_radius);
-            let position = Vector2 { x, y };
-
-            let candidate = Particle {
-                position,
-                radius: particle_radius,
-                velocity: Vector2::ZERO,
-                mass: std::f64::consts::PI * particle_radius * particle_radius,
-                color,
-            };
-
-            // Check local neighbors via uniform grid
-            let neighbors = grid.get_close_colliders(candidate.position);
-            let mut overlaps = false;
-            for &j in &neighbors {
-                let other: &Particle = &particles[j];
-                let dist_sq = (candidate.position - other.position).length_squared();
-                if dist_sq < (2.0 * particle_radius).powi(2) {
-                    overlaps = true;
-                    break;
-                }
+        match grid.try_get_none_overlaping_position(
+            particle.radius,
+            &particles,
+            max_attempts_per_particle,
+        ) {
+            Ok(position) => {
+                particle.position = position;
+                particles.push(particle);
+                grid.add_particle(particles.len() - 1, &particle);
             }
-
-            if !overlaps {
-                let idx = particles.len();
-                particles.push(candidate);
-                grid.add_particle(idx, &candidate);
-                placed = true;
+            Err(err) => {
+                eprintln!(
+                    "Warning: only placed {} out of {} particles due {}.",
+                    particles.len(),
+                    count,
+                    err
+                );
                 break;
             }
-        }
-
-        if !placed {
-            eprintln!(
-                "Warning: only placed {} out of {} particles due to overlap constraints.",
-                particles.len(),
-                count
-            );
-            break;
         }
     }
 

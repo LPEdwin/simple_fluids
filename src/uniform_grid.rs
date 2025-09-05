@@ -140,35 +140,34 @@ impl UniformGrid {
         self.cells[cell_index].insert(index);
     }
 
-    /// Trys to place the particle without overlapping.
-    /// Errors if not possible.
-    pub fn try_place_particle(
+    /// Trys to find a none overlapping position and returns it.
+    /// Returns error if not possible.
+    pub fn try_get_none_overlaping_position(
         &mut self,
-        particle: &mut Particle,
-        particles: &[Particle],
-        max_attempts_per_particle: u32,
-    ) -> Result<(), String> {
-        if particle.radius > self.cell_height {
+        particle_radius: f64,
+        particles: &Vec<Particle>,
+        max_attempts_per_particle: usize,
+    ) -> Result<Vector2, String> {
+        if particle_radius > self.cell_height {
             return Err("Radius is greater than the grids.".to_string());
         }
 
         for _ in 0..max_attempts_per_particle {
-            let position = vector2::Vector2::random_min_max(
-                self.boundary.min + particle.radius,
-                self.boundary.max,
+            let position = Vector2::random_min_max(
+                self.boundary.min + particle_radius,
+                self.boundary.max - particle_radius,
             );
             let neighbours = self.get_close_colliders(position);
             let mut overlaps = false;
             for idx in neighbours {
-                if particles[idx].collides(particle) {
+                let dist_sq = (position - particles[idx].position).length_squared();
+                if dist_sq < (particle_radius + particles[idx].radius).powi(2) {
                     overlaps = true;
                     break;
                 }
             }
             if !overlaps {
-                particle.position = position;
-                self.add_particle(particles.len(), particle);
-                return Ok(());
+                return Ok(position);
             }
         }
 
