@@ -11,12 +11,6 @@ pub struct Particle {
     pub color: Color,
 }
 
-impl Particle {
-    pub fn collides(self, other: &Particle) -> bool {
-        (self.position - other.position).length_squared() < (self.radius + other.radius).powi(2)
-    }
-}
-
 #[derive(Debug, Default, Clone, Copy)]
 pub struct Rectangle {
     pub min: Vector2,
