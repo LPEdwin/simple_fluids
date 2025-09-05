@@ -91,8 +91,6 @@ pub fn brownian_motion_sim() -> Simulation {
     const MASS: f64 = 1.0;
     const COUNT: usize = 1000;
 
-    let mut rng = Pcg64Mcg::from_rng(&mut rand::rng());
-
     let boundary = Rectangle {
         min: Vector2 { x: 0.0, y: 0.0 },
         max: Vector2 { x: 2.0, y: 1.0 },
@@ -112,7 +110,6 @@ pub fn brownian_motion_sim() -> Simulation {
     }
 
     // Generate big particle, ensuring no overlap with small particles
-    let mut big_particle_placed = false;
     let mut big_p = Particle {
         mass: MASS * 100.0,
         position: Vector2::ZERO, // Will be set
@@ -127,35 +124,16 @@ pub fn brownian_motion_sim() -> Simulation {
         grid.add_particle(i, p);
     }
 
-    for _ in 0..1000 {
-        // Try up to 100 times to place big particle
-        let x = rng.random_range(boundary.min.x + BIG_RADIUS..=boundary.max.x - BIG_RADIUS);
-        let y = rng.random_range(boundary.min.y + BIG_RADIUS..=boundary.max.y - BIG_RADIUS);
-        big_p.position = Vector2 { x, y };
-
-        // Check for overlaps with small particles
-        let neighbors = grid.get_close_colliders(big_p.position);
-        let mut overlaps = false;
-        for &j in &neighbors {
-            let other = &particles[j];
-            let dist_sq = (big_p.position - other.position).length_squared();
-            if dist_sq < (BIG_RADIUS + other.radius).powi(2) {
-                overlaps = true;
-                break;
-            }
+    match grid.try_get_none_overlaping_position(big_p.radius, &particles, 1000) {
+        Ok(position) => {
+            big_p.position = position;
+            particles.push(big_p);
         }
-
-        if !overlaps {
-            big_particle_placed = true;
-            break;
+        Err(_) => {
+            panic!("Error: Could not place big particle without overlapping small particles.");
         }
     }
 
-    if !big_particle_placed {
-        panic!("Error: Could not place big particle without overlapping small particles.");
-    }
-
-    particles.push(big_p);
     let mut trails: HashMap<usize, Vec<Vector2>> = HashMap::new();
     trails.insert(particles.len() - 1, Vec::new());
 
@@ -171,8 +149,6 @@ pub fn brownian_motion_sim() -> Simulation {
         ..Default::default()
     }
 }
-
-use rand::{Rng, SeedableRng};
 
 fn generate_non_overlapping_particles(
     boundary: Rectangle,
