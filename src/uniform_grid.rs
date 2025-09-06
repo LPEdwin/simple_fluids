@@ -2,7 +2,7 @@ use std::collections::HashSet;
 
 use crate::{
     core::{Particle, Rectangle},
-    vector2::{self, Vector2},
+    vector2::Vector2,
 };
 
 pub struct UniformGrid {
@@ -69,14 +69,6 @@ impl UniformGrid {
         }
     }
 
-    pub fn get_close_colliders_by_particle(&self, p: &Particle) -> Vec<usize> {
-        self.get_close_colliders(p.position)
-    }
-
-    fn get_cell_indices_by_particle(&self, p: &Particle) -> (usize, usize) {
-        self.get_cell_indices(p.position)
-    }
-
     pub fn get_close_colliders(&self, position: Vector2) -> Vec<usize> {
         let (col, row) = self.get_cell_indices(position);
 
@@ -93,6 +85,12 @@ impl UniformGrid {
         indices.into_iter().collect()
     }
 
+    pub fn add_particle(&mut self, index: usize, particle: &Particle) {
+        let (col, row) = self.get_cell_indices(particle.position);
+        let cell_index = self.get_cell_index(col, row);
+        self.cells[cell_index].insert(index);
+    }
+
     fn get_cell_indices(&self, position: Vector2) -> (usize, usize) {
         let col = ((position.x - self.boundary.min.x) / self.cell_width).floor() as usize;
         let row = ((position.y - self.boundary.min.y) / self.cell_height).floor() as usize;
@@ -103,7 +101,7 @@ impl UniformGrid {
         (col, row)
     }
 
-    pub fn get_cell_index_safe(&self, col: isize, row: isize) -> Option<usize> {
+    fn get_cell_index_safe(&self, col: isize, row: isize) -> Option<usize> {
         if col < 0 || row < 0 {
             return None;
         }
@@ -116,28 +114,8 @@ impl UniformGrid {
         }
     }
 
-    pub fn get_cell_index(&self, col: usize, row: usize) -> usize {
+    fn get_cell_index(&self, col: usize, row: usize) -> usize {
         col * self.n_row + row
-    }
-
-    fn clear(&mut self) {
-        self.cells = vec![HashSet::new(); self.n_col * self.n_row];
-    }
-
-    pub fn build(&mut self, particles: &[Particle]) {
-        self.clear();
-
-        for (p_index, p) in particles.iter().enumerate() {
-            let (col, row) = self.get_cell_indices_by_particle(p);
-            let cell_index = self.get_cell_index(col, row);
-            self.cells[cell_index].insert(p_index);
-        }
-    }
-
-    pub fn add_particle(&mut self, index: usize, particle: &Particle) {
-        let (col, row) = self.get_cell_indices_by_particle(particle);
-        let cell_index = self.get_cell_index(col, row);
-        self.cells[cell_index].insert(index);
     }
 
     /// Trys to find a none overlapping position and returns it.
